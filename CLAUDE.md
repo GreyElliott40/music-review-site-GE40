@@ -21,7 +21,7 @@ Grey, a beginner who is learning to code through this project. That changes how 
 
 ## Roadmap
 ### Milestone 1: Static prototype (no accounts)
-- [ ] Basic page layout and styling (header, search bar, results area)
+- [x] Basic page layout and styling (header, search bar, results area)
 - [ ] Album search with the MusicBrainz API that shows titles, artists and covers
 - [ ] Album detail page (cover, artist, year, tracklist)
 - [ ] Star rating and review box (saved in the browser for now with localStorage)
@@ -41,8 +41,10 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - Average ratings per album
 
 ## Status
-- Repo created. No code yet.
-- Next step: Milestone 1, first item (layout).
+- Layout done: `index.html` (header, search bar, results grid, footer) and `style.css` (dark theme, responsive grid). Placeholder album cards are in the results grid; delete them when real search results arrive.
+- The search form has no JavaScript yet. Submitting it just reloads the page.
+- Working site name is "Spin" (a placeholder; Grey can rename it).
+- Next step: Milestone 1, item 2 (album search with MusicBrainz). It will need a new `script.js`.
 
 ## Decisions log
 - Plain HTML/CSS/JS first so Grey learns the fundamentals before using a framework.

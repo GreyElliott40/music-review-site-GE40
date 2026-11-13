@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!-- This line tells the browser "this is a modern HTML page." Always the first line. -->
+<html lang="en">
+<head>
+  <!-- The <head> holds info ABOUT the page. Nothing in here shows up on the page itself. -->
+  <meta charset="UTF-8">
+  <!-- Makes the page scale properly on phones instead of showing a tiny zoomed-out desktop view. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spin — Rate and review albums</title>
+  <!-- Connects our stylesheet. Every rule in style.css applies to this page. -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER: the bar across the top with the site name and navigation links. -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">Spin</a>
+      <nav>
+        <!-- "My reviews" page doesn't exist yet (Milestone 1, item 5). The link is a placeholder. -->
+        <a href="index.html">Search</a>
+        <a href="#">My reviews</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN: the main content of the page. -->
+  <main class="container">
+
+    <!-- SEARCH SECTION -->
+    <section class="search-section">
+      <h1>What have you been listening to?</h1>
+      <p class="subtitle">Search for an album, rate it, and keep track of everything you've heard.</p>
+
+      <!-- A form groups an input and a button. Right now, submitting it just reloads the page.
+           Next session, JavaScript will catch the submit and search MusicBrainz instead. -->
+      <form class="search-form" id="search-form">
+        <!-- The label is for screen readers; "visually-hidden" hides it on screen (see style.css). -->
+        <label for="search-input" class="visually-hidden">Album or artist</label>
+        <input
+          type="search"
+          id="search-input"
+          name="q"
+          placeholder="Search albums or artists…"
+          autocomplete="off"
+        >
+        <button type="submit">Search</button>
+      </form>
+    </section>
+
+    <!-- RESULTS SECTION: where album results will appear. -->
+    <section class="results-section">
+      <h2>Results</h2>
+
+      <!-- The id "results" is how JavaScript will find this box later and put real albums inside it. -->
+      <div class="results-grid" id="results">
+
+        <!-- PLACEHOLDER CARDS: fake albums so we can see what the layout looks like.
+             These get deleted next session when real search results replace them. -->
+        <article class="album-card">
+          <div class="album-cover"></div>
+          <h3 class="album-title">Album Title</h3>
+          <p class="album-artist">Artist Name</p>
+        </article>
+
+        <article class="album-card">
+          <div class="album-cover"></div>
+          <h3 class="album-title">A Much Longer Album Title That Wraps</h3>
+          <p class="album-artist">Another Artist</p>
+        </article>
+
+        <article class="album-card">
+          <div class="album-cover"></div>
+          <h3 class="album-title">Third Album</h3>
+          <p class="album-artist">Third Artist</p>
+        </article>
+
+        <article class="album-card">
+          <div class="album-cover"></div>
+          <h3 class="album-title">Fourth Album</h3>
+          <p class="album-artist">Fourth Artist</p>
+        </article>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER: small print at the bottom. MusicBrainz asks that apps credit them. -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>Album data from <a href="https://musicbrainz.org">MusicBrainz</a> and the <a href="https://coverartarchive.org">Cover Art Archive</a>.</p>
+    </div>
+  </footer>
+
+</body>
+</html>
