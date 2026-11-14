@@ -85,6 +85,7 @@ a {
 .site-header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  min-height: 61px;  /* layout.js fills the header in; reserving its height stops the page jumping */
 }
 
 /* Flexbox in a row: logo on the left, nav on the right. */
@@ -113,6 +114,15 @@ nav a {
 /* ":hover" applies only while the mouse is over the element. */
 nav a:hover {
   color: var(--text);
+}
+
+/* The current page's link (layout.js marks it with aria-current="page"). */
+nav a[aria-current="page"] {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 8px;
 }
 
 
@@ -196,6 +206,10 @@ nav a:hover {
 /* "Searching...", "No albums found", and error messages. */
 .status-message {
   color: var(--text-muted);
+}
+
+.status-message.error {
+  color: var(--danger);
 }
 
 /* When the message is empty, hide it so it doesn't leave a gap. */
@@ -603,7 +617,251 @@ nav a:hover {
 }
 
 
-/* ---------- 10. Small screens ----------
+/* ---------- 10. My reviews page (my-reviews.html) ---------- */
+
+.page-title {
+  font-size: 1.75rem;
+  margin: 32px 0 16px;
+}
+
+/* "No reviews yet" and "No reviews match these filters". */
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 40px 16px;
+  margin-bottom: 48px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.empty-state p {
+  margin: 0 0 16px;
+}
+
+/* A link that looks like a button. */
+a.button {
+  display: inline-block;
+  text-decoration: none;
+}
+
+/* Stats bar: three numbers and the histogram, wrapping on narrow screens. */
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px 40px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Histogram: ★ [10 bars] ★★★★★, pushed to the right of the stats. */
+.histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: auto;
+  flex: 0 1 280px;
+}
+
+.histogram-end {
+  font-size: 0.65rem;
+  color: var(--star);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.histogram-bars {
+  display: flex;
+  align-items: flex-end;  /* bars grow up from the bottom */
+  gap: 2px;
+  flex: 1;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.histogram-bar {
+  flex: 1;
+  min-height: 2px;  /* a thin line even for ratings you've never given */
+  background: var(--text-muted);
+  border-radius: 2px 2px 0 0;
+}
+
+.histogram-bar.empty {
+  background: var(--border);
+}
+
+.histogram-bar:hover {
+  background: var(--accent);
+}
+
+/* Sort, filter and search controls. */
+.review-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.control-input {
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.control-input:focus {
+  outline: 2px solid var(--accent);
+  border-color: transparent;
+}
+
+#filter-text {
+  flex: 1 1 220px;
+}
+
+.liked-toggle {
+  cursor: pointer;
+}
+
+.liked-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--heart);  /* colors the checkbox tick */
+  cursor: pointer;
+}
+
+.liked-toggle-heart {
+  color: var(--heart);
+}
+
+.results-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 12px 0 16px;
+}
+
+.results-count:empty {
+  display: none;
+}
+
+/* Review cards are a bit wider than search cards to fit the stars and text. */
+.review-grid {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+.review-card {
+  min-width: 0;
+}
+
+.review-card-cover {
+  display: block;
+  color: inherit;          /* the "No cover" box inside the link shouldn't look like a link */
+  text-decoration: none;
+}
+
+.review-card-cover:hover .album-cover {
+  filter: brightness(1.15);
+}
+
+.review-card-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.review-card-title-link:hover {
+  text-decoration: underline;
+}
+
+.review-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+/* Small read-only stars (built by createStarDisplay in reviews.js).
+   They use the same .star / .full / .half look as the album page, just smaller. */
+.star-display {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.star-display .star {
+  font-size: 1rem;
+  cursor: default;
+}
+
+.review-card-heart {
+  color: var(--heart);
+}
+
+.review-card-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 6px 0;
+  white-space: pre-line;    /* keep line breaks you typed in the review */
+  overflow-wrap: anywhere;  /* break very long words instead of overflowing the card */
+}
+
+/* "Read more" looks like a link, but it's a button (it doesn't go anywhere). */
+.read-more {
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.read-more:hover {
+  text-decoration: underline;
+}
+
+.review-card-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+
+/* ---------- 11. Small screens ----------
    A "media query": rules inside only apply when the screen is 480px wide or less. */
 @media (max-width: 480px) {
   .search-section h1 {
@@ -627,6 +885,59 @@ nav a:hover {
 
   .star {
     font-size: 2.5rem;
+  }
+
+  /* My reviews on phones: one card per row, cover on the left, details on the right. */
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-card {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+
+  .review-card .album-title {
+    margin-top: 0;
+  }
+
+  /* Stats on phones: the three numbers in one row of equal columns,
+     the histogram on its own full-width row underneath. */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 12px;
+    align-items: start;  /* line the numbers up along the top, even if a label wraps */
+    padding: 16px;
+  }
+
+  .stat-number {
+    font-size: 1.4rem;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+  }
+
+  .histogram {
+    grid-column: 1 / -1;  /* span from the first column line to the last */
+    margin-left: 0;
+  }
+
+  /* Controls on phones: each one stretches to fill its row. */
+  .review-controls .control {
+    flex: 1 1 auto;
+  }
+
+  .review-controls .control .control-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .liked-toggle {
+    flex: 0 0 auto;
   }
 }
 

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!-- my-reviews.html — every album you've reviewed, read from localStorage.
+     my-reviews.js fills it in. This page never contacts MusicBrainz. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My reviews — Spin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER and FOOTER: layout.js fills these in, so every page shares one copy. -->
+  <header class="site-header" id="site-header"></header>
+
+  <main class="container">
+
+    <h1 class="page-title">My reviews</h1>
+
+    <!-- Error message if saved reviews can't be read. -->
+    <p class="status-message" id="status-message" aria-live="polite"></p>
+
+    <!-- No reviews yet. -->
+    <div class="empty-state" id="empty-state" hidden>
+      <p>You haven't reviewed any albums yet.</p>
+      <a class="button button-primary" href="index.html">Search for an album</a>
+    </div>
+
+    <!-- STATS: totals for ALL your reviews (filters don't change them). -->
+    <section class="stats" id="stats" hidden aria-label="Your stats">
+      <div class="stat">
+        <span class="stat-number" id="stat-count">0</span>
+        <span class="stat-label">Albums reviewed</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number" id="stat-average">–</span>
+        <span class="stat-label">Average rating</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number" id="stat-liked">0</span>
+        <span class="stat-label">Liked</span>
+      </div>
+      <!-- Rating histogram: one bar per half star, 0.5 to 5. my-reviews.js builds the bars. -->
+      <div class="histogram">
+        <span class="histogram-end" aria-hidden="true">★</span>
+        <ol class="histogram-bars" id="histogram" aria-label="How many albums got each rating"></ol>
+        <span class="histogram-end" aria-hidden="true">★★★★★</span>
+      </div>
+    </section>
+
+    <!-- CONTROLS: sort, filters, and a text filter. Their values are saved in the address. -->
+    <section class="review-controls" id="review-controls" hidden aria-label="Sort and filter">
+      <input type="search" class="control-input" id="filter-text"
+             placeholder="Filter by title or artist" aria-label="Filter by title or artist" autocomplete="off">
+
+      <label class="control">
+        <span class="control-label">Sort</span>
+        <select class="control-input" id="sort-select">
+          <option value="recent">Recently reviewed</option>
+          <option value="highest">Highest rated</option>
+          <option value="lowest">Lowest rated</option>
+          <option value="artist">Artist A–Z</option>
+          <option value="year">Release year (newest first)</option>
+        </select>
+      </label>
+
+      <label class="control">
+        <span class="control-label">Rating</span>
+        <!-- my-reviews.js adds the options: Any, ½★ and up ... 5★ only -->
+        <select class="control-input" id="min-rating-select"></select>
+      </label>
+
+      <label class="control liked-toggle">
+        <input type="checkbox" id="liked-only">
+        <span><span class="liked-toggle-heart" aria-hidden="true">♥</span> Liked only</span>
+      </label>
+    </section>
+
+    <!-- "Showing 3 of 12 reviews" -->
+    <p class="results-count" id="results-count"></p>
+
+    <!-- Filters hid everything. -->
+    <div class="empty-state" id="no-matches" hidden>
+      <p>No reviews match these filters.</p>
+      <button type="button" class="button button-plain" id="clear-filters">Clear filters</button>
+    </div>
+
+    <!-- The review cards. -->
+    <div class="results-grid review-grid" id="review-grid"></div>
+
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <!-- Shared code first (header/footer, MusicBrainz helpers, reviews), then this page's script.
+       musicbrainz.js is only used for its helpers (fixCapitalization, covers); no requests. -->
+  <script src="layout.js"></script>
+  <script src="musicbrainz.js"></script>
+  <script src="reviews.js"></script>
+  <script src="my-reviews.js"></script>
+
+</body>
+</html>

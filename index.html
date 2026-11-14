@@ -12,17 +12,8 @@
 </head>
 <body>
 
-  <!-- HEADER: the bar across the top with the site name and navigation links. -->
-  <header class="site-header">
-    <div class="container header-inner">
-      <a href="index.html" class="logo">Spin</a>
-      <nav>
-        <!-- "My reviews" page doesn't exist yet (Milestone 1, item 5). The link is a placeholder. -->
-        <a href="index.html">Search</a>
-        <a href="#">My reviews</a>
-      </nav>
-    </div>
-  </header>
+  <!-- HEADER and FOOTER: layout.js fills these in, so every page shares one copy. -->
+  <header class="site-header" id="site-header"></header>
 
   <!-- MAIN: the main content of the page. -->
   <main class="container">
@@ -62,16 +53,12 @@
 
   </main>
 
-  <!-- FOOTER: small print at the bottom. MusicBrainz asks that apps credit them. -->
-  <footer class="site-footer">
-    <div class="container">
-      <p>Album data from <a href="https://musicbrainz.org">MusicBrainz</a> and the <a href="https://coverartarchive.org">Cover Art Archive</a>.</p>
-    </div>
-  </footer>
+  <footer class="site-footer" id="site-footer"></footer>
 
   <!-- Loads our JavaScript. It goes at the very end so all the HTML above
        already exists when the script looks for elements by their id.
        Order matters: musicbrainz.js (shared helpers) must load before script.js uses them. -->
+  <script src="layout.js"></script>
   <script src="musicbrainz.js"></script>
   <script src="script.js"></script>
 

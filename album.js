@@ -217,28 +217,11 @@ let savedMessageTimer = null; // lets us cancel the timer that hides "Saved ✓"
 
 // 6c. Drawing the stars
 // For a rating like 3.5: stars 1–3 are full, star 4 is half, star 5 is empty.
-// The look of "full" and "half" is in style.css.
+// paintStars, describeRating and formatReviewDate are in reviews.js, shared with
+// the My reviews page so stars and dates look the same everywhere.
 function drawStars(rating) {
-  for (const star of stars) {
-    // data-star="3" in the HTML becomes star.dataset.star, which is the TEXT "3".
-    // Number() turns it into the number 3 so we can compare it.
-    const starNumber = Number(star.dataset.star);
-    // classList.toggle("full", true) adds the class; with false it removes it.
-    star.classList.toggle("full", rating >= starNumber);
-    star.classList.toggle("half", rating === starNumber - 0.5);
-  }
+  paintStars(stars, rating);
   ratingLabel.textContent = rating === 0 ? "Rate this album" : rating + " out of 5";
-}
-
-// What a screen reader says: "No rating" or "3.5 out of 5 stars".
-function describeRating(rating) {
-  return rating === 0 ? "No rating" : rating + " out of 5 stars";
-}
-
-// "2026-11-14T18:22:05.123Z" → "Nov 14, 2026"
-function formatDate(isoText) {
-  const date = new Date(isoText); // turn the saved text back into a date
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 // Puts a message next to the Save button. kind is "success", "error", or "" (plain).
@@ -275,7 +258,7 @@ function updateReviewBox() {
   saveButton.disabled = !storageWorks || !hasUnsavedChanges() || currentRating === 0;
 
   deleteButton.hidden = savedReview === null; // Delete only makes sense if there's a saved review
-  reviewedDate.textContent = savedReview ? "Reviewed " + formatDate(savedReview.savedAt) : "";
+  reviewedDate.textContent = savedReview ? "Reviewed " + formatReviewDate(savedReview.savedAt) : "";
 }
 
 // Every listener below calls this after changing the state.

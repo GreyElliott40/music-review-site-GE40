@@ -137,3 +137,51 @@ function deleteReview(albumId) {
   delete reviews[albumId]; // "delete" removes a property from an object
   return saveAllReviews(reviews);
 }
+
+
+/* ---------- 6. Showing ratings and dates ----------
+   Shared by the album page and the My reviews page so both look the same.
+   A star is a <span class="star">★</span>. style.css draws it gray, and draws a
+   gold ★ on top when it has the class "full" (whole star) or "half" (left half). */
+
+// Colors in a row of 5 star elements for a rating, e.g. 3.5 → 3 full, 1 half, 1 empty.
+function paintStars(starElements, rating) {
+  starElements.forEach(function (star, index) {
+    const starNumber = index + 1; // the first star (index 0) is star 1
+    // classList.toggle("full", true) adds the class; with false it removes it.
+    star.classList.toggle("full", rating >= starNumber);
+    star.classList.toggle("half", rating === starNumber - 0.5);
+  });
+}
+
+// "3.5 out of 5 stars", or "No rating" for 0. Used for screen readers.
+function describeRating(rating) {
+  return rating === 0 ? "No rating" : rating + " out of 5 stars";
+}
+
+// Builds a small read-only row of stars, e.g. for a review card.
+// role="img" + aria-label: screen readers say "3.5 out of 5 stars" once,
+// instead of reading out five "★" characters.
+function createStarDisplay(rating) {
+  const row = document.createElement("span");
+  row.className = "star-display";
+  row.setAttribute("role", "img");
+  row.setAttribute("aria-label", describeRating(rating));
+
+  const stars = [];
+  for (let i = 0; i < 5; i++) {
+    const star = document.createElement("span");
+    star.className = "star";
+    star.textContent = "★";
+    stars.push(star);
+  }
+  paintStars(stars, rating);
+  row.append(...stars); // "..." spreads the list out: append(star1, star2, star3, ...)
+  return row;
+}
+
+// "2026-11-14T18:22:05.123Z" → "Nov 14, 2026"
+function formatReviewDate(isoText) {
+  const date = new Date(isoText); // turn the saved text back into a date
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}

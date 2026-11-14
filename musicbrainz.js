@@ -178,15 +178,18 @@ function getCoverUrl(albumId, size) {
   return `https://coverartarchive.org/release-group/${albumId}/front-${size}`;
 }
 
-// Builds the cover image for an album. size is 250 (small) or 500 (big).
-// The Cover Art Archive has a cover address for every album id. If the album
-// has no cover, the image fails to load and the "error" event fires.
-function createCoverImage(album, size) {
+// Builds a cover <img> from a cover address. If the address is empty or the
+// image fails to load (the album has no cover art), shows the "No cover" box instead.
+function createCoverFromUrl(url, altText) {
+  if (!url) {
+    return createNoCoverBox();
+  }
+
   // document.createElement makes a new element. It isn't on the page yet.
   const cover = document.createElement("img");
   cover.className = "album-cover";
-  cover.src = getCoverUrl(album.id, size);
-  cover.alt = "Cover of " + fixCapitalization(album.title);
+  cover.src = url;
+  cover.alt = altText;
 
   // addEventListener means "when this happens, run this function".
   // Here: when the image fails to load, swap it for the "No cover" box.
@@ -195,4 +198,9 @@ function createCoverImage(album, size) {
   });
 
   return cover;
+}
+
+// Builds the cover image for a MusicBrainz album. size is 250 (small) or 500 (big).
+function createCoverImage(album, size) {
+  return createCoverFromUrl(getCoverUrl(album.id, size), "Cover of " + fixCapitalization(album.title));
 }
