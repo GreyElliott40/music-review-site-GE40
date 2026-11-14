@@ -11,7 +11,9 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - After each change, explain in plain language what each new or changed file does and why.
 - Add short comments to the code, especially when a concept is new (fetch, async/await, DOM manipulation, etc.).
 - When there's a choice to make, give Grey the tradeoff in two or three sentences and let him decide.
-- Make one feature per session. At the end, update the "Status" section below.
+- Build up to 3 roadmap items per session. After each item, update the "Status" section below.
+- Don't tell Grey to start a new session, or end one, without asking him first.
+- Always ask Grey for permission before merging a pull request, every time. Approval for one PR doesn't carry over to the next.
 
 ## Tech stack
 - **Frontend:** plain HTML, CSS and JavaScript (no framework yet)
