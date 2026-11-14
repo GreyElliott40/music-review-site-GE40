@@ -1,7 +1,9 @@
 /* ============================================================
-   script.js — makes the search bar actually search.
+   script.js — the search page (index.html).
    HTML = what's on the page. CSS = how it looks.
    JavaScript = what the page DOES when you interact with it.
+   Shared helpers (waitForRateLimit, fetchFromMusicBrainz, getArtistName,
+   getYear, createCoverImage) live in musicbrainz.js, which loads first.
    ============================================================ */
 
 
@@ -15,37 +17,10 @@ const searchButton = searchForm.querySelector("button"); // the first <button> i
 const statusMessage = document.getElementById("status-message");
 const resultsGrid = document.getElementById("results");
 
-// The web address of the MusicBrainz search API for "release groups" (= albums).
-// A release group bundles every version of an album (CD, vinyl, deluxe, etc.)
-// so we get each album once instead of ten copies.
-const MUSICBRAINZ_URL = "https://musicbrainz.org/ws/2/release-group/";
-
-
-/* ---------- 2. Rate limiting ----------
-   MusicBrainz asks apps to send at most about 1 request per second.
-   We remember when we last asked, and if it was less than a second ago, we wait.
-   "let" (instead of const) means the value is allowed to change later. */
-let lastRequestTime = 0;
 let isSearching = false; // true while a search is running, so we don't start two at once
 
-async function waitForRateLimit() {
-  const oneSecond = 1000; // JavaScript measures time in milliseconds
-  const timeSinceLast = Date.now() - lastRequestTime;
 
-  if (timeSinceLast < oneSecond) {
-    const waitTime = oneSecond - timeSinceLast;
-    // A Promise is "a value that will be ready later". This one is ready after
-    // waitTime milliseconds. "await" pauses this function until it's ready.
-    await new Promise(function (resolve) {
-      setTimeout(resolve, waitTime);
-    });
-  }
-
-  lastRequestTime = Date.now();
-}
-
-
-/* ---------- 3. Build the search query ----------
+/* ---------- 2. Build the search query ----------
    MusicBrainz uses a special search language. By default it only searches
    album TITLES, so typing "radiohead" would find albums named "Radiohead".
    These functions build a query that matches the title OR the artist,
@@ -115,103 +90,42 @@ function buildQuery(text, matchEveryWord) {
 }
 
 
-/* ---------- 4. Ask MusicBrainz for albums ----------
-   "async" marks a function that does slow work (like talking to another website)
-   and is allowed to use "await" inside it. */
+/* ---------- 3. Ask MusicBrainz for albums ---------- */
 async function searchAlbums(text, matchEveryWord) {
-  await waitForRateLimit();
-
-  // URLSearchParams builds the "?query=...&fmt=json" part of a web address and
-  // safely encodes spaces and symbols (a space becomes %20, etc.).
-  const params = new URLSearchParams({
+  // "release-group/" is the search for release groups (= albums). A release group
+  // bundles every version of an album (CD, vinyl, deluxe...) so each album shows up once.
+  const data = await fetchFromMusicBrainz("release-group/", {
     query: buildQuery(text, matchEveryWord),
-    fmt: "json",  // ask for JSON instead of the default XML
-    limit: "24",  // at most 24 results
+    limit: "24", // at most 24 results
   });
-
-  // fetch() sends a request to a web address and gets a response back.
-  // It takes time, so we "await" it: the code waits here until the answer arrives,
-  // but the rest of the page keeps working (you can still scroll, etc.).
-  const url = MUSICBRAINZ_URL + "?" + params.toString();
-  let response = await fetch(url);
-
-  // Status 503 means "too busy, try later". MusicBrainz sends it fairly often,
-  // so we wait our 1 second and try one more time before giving up.
-  if (response.status === 503) {
-    await waitForRateLimit();
-    response = await fetch(url);
-  }
-
-  // response.ok is false when the server answers with an error code
-  // (like 503 = "too busy" or 400 = "bad request").
-  if (!response.ok) {
-    // "throw" stops this function and jumps to the "catch" block in section 6.
-    throw new Error("MusicBrainz error " + response.status);
-  }
-
-  // The response body is JSON: text formatted like JavaScript objects, e.g.
-  //   { "release-groups": [ { "title": "OK Computer", ... }, ... ] }
-  // response.json() turns that text into real JavaScript objects we can use.
-  const data = await response.json();
   return data["release-groups"]; // the list (array) of albums
 }
 
 
-/* ---------- 5. Show things on the page ---------- */
+/* ---------- 4. Show things on the page ---------- */
 
 // Puts a message (like "Searching...") above the results.
 function showMessage(text) {
   statusMessage.textContent = text;
 }
 
-// Joins the artist names. Most albums have one artist, but some have several,
-// e.g. [{name: "Jay-Z", joinphrase: " & "}, {name: "Kanye West", joinphrase: ""}]
-function getArtistName(album) {
-  let name = "";
-  for (const credit of album["artist-credit"] || []) {
-    name += credit.name + (credit.joinphrase || "");
-  }
-  return name || "Unknown artist";
-}
-
-// Dates look like "1997-05-21", "1997-05" or "1997". The year is the first 4 characters.
-function getYear(album) {
-  const date = album["first-release-date"];
-  return date ? date.slice(0, 4) : "Unknown year";
-}
-
-// Builds the "No cover" box used when an album has no art.
-function createNoCoverBox() {
-  const box = document.createElement("div");
-  box.className = "album-cover no-cover";
-  box.textContent = "No cover";
-  return box;
-}
-
 // Builds ONE album card. This is "DOM manipulation": creating HTML elements
 // with JavaScript instead of typing them into index.html.
-// The result looks like the placeholder cards from last session:
-//   <article class="album-card">
+// The whole card is a link to the album page:
+//   <a class="album-card" href="album.html?id=...&q=...">
 //     <img class="album-cover"> <h3 class="album-title"> <p class="album-artist"> <p class="album-year">
-//   </article>
-function createAlbumCard(album) {
-  // document.createElement makes a new element. It isn't on the page yet.
-  const card = document.createElement("article");
+//   </a>
+function createAlbumCard(album, searchText) {
+  const card = document.createElement("a");
   card.className = "album-card";
 
-  // The Cover Art Archive gives a 250px cover for any album id.
-  // If there's no cover, the image fails to load and the "error" event fires.
-  const cover = document.createElement("img");
-  cover.className = "album-cover";
-  cover.src = `https://coverartarchive.org/release-group/${album.id}/front-250`;
-  cover.alt = "Cover of " + album.title;
-  cover.loading = "lazy"; // only download the image when it's about to scroll into view
+  // The part after "?" is the "query string": extra information for the next page.
+  // id = which album to show. q = what you searched, so the album page's
+  // "Back to search" link can bring your results back.
+  card.href = "album.html?" + new URLSearchParams({ id: album.id, q: searchText });
 
-  // addEventListener means "when this happens, run this function".
-  // Here: when the image fails to load, swap it for the "No cover" box.
-  cover.addEventListener("error", function () {
-    cover.replaceWith(createNoCoverBox());
-  });
+  const cover = createCoverImage(album, 250); // from musicbrainz.js
+  cover.loading = "lazy"; // only download the image when it's about to scroll into view
 
   const title = document.createElement("h3");
   title.className = "album-title";
@@ -234,28 +148,17 @@ function createAlbumCard(album) {
 }
 
 // Clears the grid and fills it with a card for each album.
-function showResults(albums) {
+function showResults(albums, searchText) {
   resultsGrid.innerHTML = ""; // remove whatever was there before
 
   for (const album of albums) {
-    resultsGrid.append(createAlbumCard(album)); // this is the moment it appears on the page
+    resultsGrid.append(createAlbumCard(album, searchText)); // this is the moment it appears on the page
   }
 }
 
 
-/* ---------- 6. Run a search when the form is submitted ----------
-   The form's "submit" event fires when you click Search OR press Enter
-   in the search box, so this one listener handles both. */
-searchForm.addEventListener("submit", async function (event) {
-  // By default, submitting a form reloads the page. This line stops that,
-  // so JavaScript handles the search instead.
-  event.preventDefault();
-
-  const text = searchInput.value.trim(); // .trim() removes spaces at the start and end
-  if (text === "" || isSearching) {
-    return; // nothing typed, or a search is already running: do nothing
-  }
-
+/* ---------- 5. Run a search ---------- */
+async function runSearch(text) {
   isSearching = true;
   searchButton.disabled = true;
   resultsGrid.innerHTML = "";
@@ -270,7 +173,7 @@ searchForm.addEventListener("submit", async function (event) {
 
     // Nothing? One word might be too misspelled ("tiara" for "tirar").
     // Try again, accepting albums that match only some of the words.
-    // waitForRateLimit() inside searchAlbums keeps this 1 second after the first request.
+    // The rate limiter in musicbrainz.js keeps this 1 second after the first request.
     if (albums.length === 0) {
       showMessage("No exact matches. Looking for close matches...");
       albums = await searchAlbums(text, false);
@@ -285,7 +188,7 @@ searchForm.addEventListener("submit", async function (event) {
       } else {
         showMessage(""); // clear the "Searching..." message
       }
-      showResults(albums);
+      showResults(albums, text);
     }
   } catch (error) {
     console.error(error); // prints the real error in the browser's developer console (F12)
@@ -295,4 +198,36 @@ searchForm.addEventListener("submit", async function (event) {
     isSearching = false;
     searchButton.disabled = false;
   }
+}
+
+
+/* ---------- 6. When the form is submitted ----------
+   The form's "submit" event fires when you click Search OR press Enter
+   in the search box, so this one listener handles both. */
+searchForm.addEventListener("submit", function (event) {
+  // By default, submitting a form reloads the page. This line stops that,
+  // so JavaScript handles the search instead.
+  event.preventDefault();
+
+  const text = searchInput.value.trim(); // .trim() removes spaces at the start and end
+  if (text === "" || isSearching) {
+    return; // nothing typed, or a search is already running: do nothing
+  }
+
+  // Put the search in the address bar (index.html?q=radiohead) WITHOUT reloading.
+  // Then, if you click an album and press the browser's Back button,
+  // you land on index.html?q=radiohead and section 7 runs the search again.
+  history.replaceState(null, "", "?" + new URLSearchParams({ q: text }));
+
+  runSearch(text);
 });
+
+
+/* ---------- 7. When the page first loads ----------
+   window.location.search is the "?q=..." part of the current address.
+   If there's a search in it, fill in the box and run it. */
+const startingSearch = new URLSearchParams(window.location.search).get("q");
+if (startingSearch) {
+  searchInput.value = startingSearch;
+  runSearch(startingSearch);
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!-- album.html — the page for ONE album. Which album? The address tells us:
+     album.html?id=b1392450-e666-3926-a536-22c65f834433
+     album.js reads that id and asks MusicBrainz for the details. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- album.js replaces this title with the album's name once it loads. -->
+  <title>Album — Spin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER: copied from index.html. Plain HTML has no way to share one header
+       between pages, so for now each page has its own copy. If you change one, change both. -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">Spin</a>
+      <nav>
+        <a href="index.html">Search</a>
+        <a href="#">My reviews</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- album.js changes this link to go back to your search (index.html?q=...). -->
+    <a href="index.html" class="back-link" id="back-link">← Back to search</a>
+
+    <!-- "Loading album...", or an error message. -->
+    <p class="status-message" id="status-message" aria-live="polite">Loading album...</p>
+
+    <!-- album.js builds the cover, title, artist, year and tracklist inside this box. -->
+    <div id="album-detail"></div>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>Album data from <a href="https://musicbrainz.org">MusicBrainz</a> and the <a href="https://coverartarchive.org">Cover Art Archive</a>.</p>
+    </div>
+  </footer>
+
+  <!-- Same idea as index.html: shared helpers first, then this page's own script. -->
+  <script src="musicbrainz.js"></script>
+  <script src="album.js"></script>
+
+</body>
+</html>
