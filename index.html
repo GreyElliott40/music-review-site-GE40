@@ -32,8 +32,8 @@
       <h1>What have you been listening to?</h1>
       <p class="subtitle">Search for an album, rate it, and keep track of everything you've heard.</p>
 
-      <!-- A form groups an input and a button. Right now, submitting it just reloads the page.
-           Next session, JavaScript will catch the submit and search MusicBrainz instead. -->
+      <!-- A form groups an input and a button. script.js catches the "submit" event
+           (clicking Search or pressing Enter) and searches MusicBrainz instead of reloading the page. -->
       <form class="search-form" id="search-form">
         <!-- The label is for screen readers; "visually-hidden" hides it on screen (see style.css). -->
         <label for="search-input" class="visually-hidden">Album or artist</label>
@@ -52,36 +52,12 @@
     <section class="results-section">
       <h2>Results</h2>
 
-      <!-- The id "results" is how JavaScript will find this box later and put real albums inside it. -->
-      <div class="results-grid" id="results">
+      <!-- Status message: "Searching...", "No albums found", or an error.
+           aria-live="polite" makes screen readers announce it when the text changes. -->
+      <p class="status-message" id="status-message" aria-live="polite">Search for an album to get started.</p>
 
-        <!-- PLACEHOLDER CARDS: fake albums so we can see what the layout looks like.
-             These get deleted next session when real search results replace them. -->
-        <article class="album-card">
-          <div class="album-cover"></div>
-          <h3 class="album-title">Album Title</h3>
-          <p class="album-artist">Artist Name</p>
-        </article>
-
-        <article class="album-card">
-          <div class="album-cover"></div>
-          <h3 class="album-title">A Much Longer Album Title That Wraps</h3>
-          <p class="album-artist">Another Artist</p>
-        </article>
-
-        <article class="album-card">
-          <div class="album-cover"></div>
-          <h3 class="album-title">Third Album</h3>
-          <p class="album-artist">Third Artist</p>
-        </article>
-
-        <article class="album-card">
-          <div class="album-cover"></div>
-          <h3 class="album-title">Fourth Album</h3>
-          <p class="album-artist">Fourth Artist</p>
-        </article>
-
-      </div>
+      <!-- script.js finds this box by its id and fills it with album cards. -->
+      <div class="results-grid" id="results"></div>
     </section>
 
   </main>
@@ -92,6 +68,10 @@
       <p>Album data from <a href="https://musicbrainz.org">MusicBrainz</a> and the <a href="https://coverartarchive.org">Cover Art Archive</a>.</p>
     </div>
   </footer>
+
+  <!-- Loads our JavaScript. It goes at the very end so all the HTML above
+       already exists when the script looks for elements by their id. -->
+  <script src="script.js"></script>
 
 </body>
 </html>

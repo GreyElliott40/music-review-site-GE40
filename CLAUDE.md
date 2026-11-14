@@ -22,7 +22,7 @@ Grey, a beginner who is learning to code through this project. That changes how 
 ## Roadmap
 ### Milestone 1: Static prototype (no accounts)
 - [x] Basic page layout and styling (header, search bar, results area)
-- [ ] Album search with the MusicBrainz API that shows titles, artists and covers
+- [x] Album search with the MusicBrainz API that shows titles, artists and covers
 - [ ] Album detail page (cover, artist, year, tracklist)
 - [ ] Star rating and review box (saved in the browser for now with localStorage)
 - [ ] "My reviews" page that lists saved ratings
@@ -41,11 +41,15 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - Average ratings per album
 
 ## Status
-- Layout done: `index.html` (header, search bar, results grid, footer) and `style.css` (dark theme, responsive grid). Placeholder album cards are in the results grid; delete them when real search results arrive.
-- The search form has no JavaScript yet. Submitting it just reloads the page.
+- Layout done: `index.html` (header, search bar, results grid, footer) and `style.css` (dark theme, responsive grid).
+- Album search done: `script.js` searches MusicBrainz release groups (studio albums only: no singles, live albums or compilations), shows cover / title / artist / year cards, a "No cover" box when art is missing, and Searching / No results / error messages. Waits at least 1 second between requests and retries once on a 503 ("too busy").
+- Search quality is decent but imperfect: searching an artist name can also return albums *titled* with that name (e.g. "radiohead"). Ranking lives in `buildQuery()` in `script.js`.
+- Album cards are not clickable yet.
 - Working site name is "Spin" (a placeholder; Grey can rename it).
-- Next step: Milestone 1, item 2 (album search with MusicBrainz). It will need a new `script.js`.
+- Next step: Milestone 1, item 3 (album detail page). Clicking a card should open it, using the album's MusicBrainz id.
 
 ## Decisions log
 - Plain HTML/CSS/JS first so Grey learns the fundamentals before using a framework.
 - MusicBrainz instead of Spotify: it's free and needs no API key or developer approval.
+- Search MusicBrainz *release groups*, not releases, so each album shows up once instead of once per edition.
+- Cover images come straight from the Cover Art Archive with an <img> tag; the 1-request-per-second limit is only for the MusicBrainz API.
