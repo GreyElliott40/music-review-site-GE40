@@ -3,7 +3,7 @@
 Claude: read this whole file at the start of every session. It's the project's memory.
 
 ## What this is
-A Letterboxd-style website for music. Users search for an album, rate it 1–5 stars, can write a short review, and see their reviews on a profile page.
+A Letterboxd-style website for music. Users search for an album, rate it 0.5–5 stars (half stars allowed), can "like" it with a heart, can write a short review, and see their reviews on a profile page.
 
 ## Who's building it
 Grey, a beginner who is learning to code through this project. That changes how Claude should work:
@@ -26,7 +26,7 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - [x] Basic page layout and styling (header, search bar, results area)
 - [x] Album search with the MusicBrainz API that shows titles, artists and covers
 - [x] Album detail page (cover, artist, year, tracklist)
-- [ ] Star rating and review box (saved in the browser for now with localStorage)
+- [ ] Rating and review box, working like Letterboxd's: a 5-star rating that allows half stars (0.5–5), a separate heart to mark that you liked the album, and a short review (saved in the browser for now with localStorage)
 - [ ] "My reviews" page that lists saved ratings
 - [ ] Deploy to GitHub Pages
 
@@ -52,7 +52,7 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - Title capitalization: MusicBrainz writes Spanish (and some other languages') titles in sentence case ("Un verano sin ti") and doesn't store the artist's styling. `fixCapitalization()` changes titles that are in plain sentence case (capital first letter, everything else lowercase) to "Un Verano Sin Ti", keeping small Spanish words (de, la, y...) lowercase. Titles styled on purpose (IGOR, GNX's lowercase tracks, DeBÍ TiRAR MáS FOToS) are untouched. Known misses: a sentence-case title with any other capital ("Voy a llevarte pa PR") or starting with a symbol ("¿Quién es?") isn't fixed; an artist who really uses sentence case gets wrongly capitalized. Artist names are never changed.
 - The header and footer are copied into both `index.html` and `album.html`; change both if you change one.
 - Working site name is "Spin" (a placeholder; Grey can rename it).
-- Next step: Milestone 1, item 4 (star rating and review box on the album page, saved with localStorage).
+- Next step: Milestone 1, item 4 (rating and review box on the album page: Letterboxd-style half-star rating + like heart + review, saved with localStorage). Grey asked to wait before starting it.
 
 ## Decisions log
 - Plain HTML/CSS/JS first so Grey learns the fundamentals before using a framework.
@@ -63,3 +63,4 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - Album page is a separate page (`album.html?id=...`), not a view swapped in on the search page, so every album has its own link and the Back button works. (Grey's choice.)
 - The album page shows the tracklist of the earliest official edition, since one album can have many editions with different tracklists.
 - Title capitalization is fixed with a rule (`fixCapitalization()`), not a second data source like Apple Music. It's a best guess, not the artist's real styling. A second data source would be accurate but much bigger; revisit after Milestone 1 if it matters. (Grey's choice.)
+- Ratings work like Letterboxd's: 0.5–5 stars in half steps, plus a separate "like" heart, instead of whole 1–5 stars. (Grey's choice.)
