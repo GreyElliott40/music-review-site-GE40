@@ -160,6 +160,13 @@ nav a:hover {
   filter: brightness(1.1);
 }
 
+/* While a search is running, script.js disables the button so you can't
+   start a second search. This makes it look faded so you can tell. */
+.search-form button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 
 /* ---------- 5. Results grid ---------- */
 
@@ -170,6 +177,16 @@ nav a:hover {
   color: var(--text-muted);
   border-bottom: 1px solid var(--border);
   padding-bottom: 8px;
+}
+
+/* "Searching...", "No albums found", and error messages. */
+.status-message {
+  color: var(--text-muted);
+}
+
+/* When the message is empty, hide it so it doesn't leave a gap. */
+.status-message:empty {
+  display: none;
 }
 
 /* CSS Grid: lays cards out in rows and columns automatically.
@@ -187,13 +204,26 @@ nav a:hover {
   min-width: 0;  /* lets long titles wrap instead of stretching the card */
 }
 
-/* Gray square standing in for the album cover image.
+/* The album cover. Used for both the real <img> and the "No cover" box.
    "aspect-ratio: 1" keeps it perfectly square at any width. */
 .album-cover {
+  display: block;     /* images are "inline" by default, which leaves a small gap under them */
+  width: 100%;
   aspect-ratio: 1;
-  background: var(--surface);
+  object-fit: cover;  /* if a cover isn't square, crop it to fill the square instead of stretching it */
+  background: var(--surface);  /* shows as a gray square while the image is loading */
   border: 1px solid var(--border);
   border-radius: 4px;
+}
+
+/* The placeholder box shown when an album has no cover art.
+   Flexbox centers the "No cover" text in the middle of the square. */
+.album-cover.no-cover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .album-title {
@@ -201,7 +231,8 @@ nav a:hover {
   margin: 8px 0 2px;
 }
 
-.album-artist {
+.album-artist,
+.album-year {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin: 0;
