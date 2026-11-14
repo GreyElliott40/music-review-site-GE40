@@ -15,6 +15,9 @@
   --text: #e6e9ec;        /* main text */
   --text-muted: #8b98a5;  /* secondary text (artist names, subtitles) */
   --accent: #40bcf4;      /* buttons and links */
+  --star: #f5b301;        /* filled rating stars */
+  --heart: #ff6b81;       /* the "liked" heart */
+  --danger: #ff6b6b;      /* delete buttons and error messages */
   --radius: 8px;          /* how rounded corners are */
 }
 
@@ -56,6 +59,14 @@ a {
   max-width: 1000px;
   margin: 0 auto;
   padding: 0 16px;
+}
+
+/* The HTML "hidden" attribute normally hides an element, but any CSS rule that
+   sets "display" (like display: flex) wins over it. This makes "hidden" always win,
+   so album.js can show and hide things just by setting element.hidden = true/false.
+   !important means "this rule beats any other rule". Use it rarely; this is a good case. */
+[hidden] {
+  display: none !important;
 }
 
 /* Hides something visually but keeps it readable by screen readers. */
@@ -172,7 +183,8 @@ nav a:hover {
 
 /* Small all-caps section headings: "RESULTS" on the search page, "TRACKLIST" on the album page. */
 .results-section h2,
-.tracklist-section h2 {
+.tracklist-section h2,
+.review-box h2 {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -359,7 +371,239 @@ nav a:hover {
 }
 
 
-/* ---------- 8. Small screens ----------
+/* ---------- 8. Buttons ----------
+   Reusable button styles. An element can have several classes:
+   class="button button-primary" gets the rules from BOTH. */
+.button {
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;  /* buttons don't use the page font unless told to */
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background: var(--accent);
+  color: #0b1014;
+}
+
+.button-plain {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.button-plain:hover {
+  color: var(--text);
+}
+
+.button-danger {
+  background: var(--danger);
+  color: #0b1014;
+}
+
+
+/* ---------- 9. Review box (album.html) ---------- */
+
+.review-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4px 20px 20px;
+  margin-bottom: 40px;
+}
+
+/* Stars and heart side by side. flex-wrap lets them stack if the screen is narrow. */
+.rating-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+/* The row of 5 stars. */
+.star-rating {
+  display: flex;
+  gap: 4px;
+  border-radius: 4px;
+  user-select: none;  /* stop a double-click from highlighting the stars like text */
+}
+
+/* The dashed outline you see after pressing Tab, so keyboard users know where they are. */
+.star-rating:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+}
+
+/* One star. 2.75rem ≈ 44px, a comfortable size to tap on a phone
+   (each half is about 22px wide).
+   The gray ★ is the empty star. A gold ★ is drawn ON TOP of it with ::before
+   (a "pseudo-element": an extra piece CSS adds without any HTML). Its width
+   decides how much gold shows: 0 = empty, 50% = half star, 100% = full star.
+   overflow: hidden cuts off whatever doesn't fit in that width. */
+.star {
+  position: relative;  /* so ::before can be placed exactly on top */
+  font-size: 2.75rem;
+  line-height: 1;
+  color: var(--border);
+  cursor: pointer;
+}
+
+.star::before {
+  content: "★";
+  position: absolute;  /* sit on top of the gray star, at its top-left corner */
+  top: 0;
+  left: 0;
+  width: 0;
+  overflow: hidden;
+  color: var(--star);
+}
+
+.star.half::before {
+  width: 50%;
+}
+
+.star.full::before {
+  width: 100%;
+}
+
+/* The heart button: heart icon with "Like" / "Liked" underneath. */
+.like-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.like-icon {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.like-label {
+  font-size: 0.75rem;
+}
+
+.like-button:hover {
+  color: var(--text);
+}
+
+/* [aria-pressed="true"] selects the button only when the heart is ON. */
+.like-button[aria-pressed="true"] {
+  color: var(--heart);
+}
+
+.like-button:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
+.rating-label {
+  color: var(--text-muted);
+  margin: 6px 0 20px;
+}
+
+.review-text-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* The text box. Styled like the search box. resize: vertical lets you drag it
+   taller, but not wider (wider would break the layout). */
+.review-text {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.review-text:focus {
+  outline: 2px solid var(--accent);
+  border-color: transparent;
+}
+
+/* "312 / 1000", right-aligned under the box. Turns red near the limit. */
+.char-count {
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 4px 0 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.char-count.near-limit {
+  color: var(--danger);
+}
+
+.review-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.review-message {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.review-message.success {
+  color: var(--accent);
+}
+
+.review-message.error {
+  color: var(--danger);
+}
+
+/* The "Delete your review?" box: a faint red background so it reads as a warning. */
+.delete-confirm {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: rgba(255, 107, 107, 0.08);  /* the danger red at 8% strength */
+}
+
+.delete-confirm p {
+  margin: 0 0 12px;
+}
+
+.delete-confirm .button {
+  margin-right: 8px;
+}
+
+.reviewed-date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 16px 0 0;
+}
+
+.reviewed-date:empty {
+  display: none;
+}
+
+
+/* ---------- 10. Small screens ----------
    A "media query": rules inside only apply when the screen is 480px wide or less. */
 @media (max-width: 480px) {
   .search-section h1 {
@@ -369,6 +613,20 @@ nav a:hover {
   .results-grid {
     grid-template-columns: repeat(2, 1fr);  /* always 2 columns on phones */
     gap: 16px;
+  }
+
+  /* Review box on phones: a bit less padding and slightly smaller stars (40px,
+     so each half is 20px), so the stars and the heart fit on one line. */
+  .review-box {
+    padding: 4px 16px 16px;
+  }
+
+  .rating-row {
+    gap: 12px;
+  }
+
+  .star {
+    font-size: 2.5rem;
   }
 }
 
