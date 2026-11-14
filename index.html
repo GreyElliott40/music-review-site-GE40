@@ -70,7 +70,9 @@
   </footer>
 
   <!-- Loads our JavaScript. It goes at the very end so all the HTML above
-       already exists when the script looks for elements by their id. -->
+       already exists when the script looks for elements by their id.
+       Order matters: musicbrainz.js (shared helpers) must load before script.js uses them. -->
+  <script src="musicbrainz.js"></script>
   <script src="script.js"></script>
 
 </body>

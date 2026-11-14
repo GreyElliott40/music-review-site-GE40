@@ -170,7 +170,9 @@ nav a:hover {
 
 /* ---------- 5. Results grid ---------- */
 
-.results-section h2 {
+/* Small all-caps section headings: "RESULTS" on the search page, "TRACKLIST" on the album page. */
+.results-section h2,
+.tracklist-section h2 {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -200,8 +202,32 @@ nav a:hover {
   padding-bottom: 48px;
 }
 
+/* Each card is now a link (<a>) to the album page.
+   Links are blue and underlined by default; these lines undo that so the card
+   looks the same as before, just clickable. */
 .album-card {
+  display: block;
   min-width: 0;  /* lets long titles wrap instead of stretching the card */
+  color: inherit;          /* use the normal text color, not link blue */
+  text-decoration: none;   /* no underline */
+}
+
+/* When the mouse is over a card: brighten the cover and underline the title,
+   so it's obvious the card is clickable. ".album-card:hover .album-title" means
+   "the title INSIDE a card that's being hovered". */
+.album-card:hover .album-cover {
+  filter: brightness(1.15);
+}
+
+.album-card:hover .album-title {
+  text-decoration: underline;
+}
+
+/* An outline for people moving through the page with the Tab key instead of a mouse. */
+.album-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 
 /* The album cover. Used for both the real <img> and the "No cover" box.
@@ -249,7 +275,91 @@ nav a:hover {
 }
 
 
-/* ---------- 7. Small screens ----------
+/* ---------- 7. Album page (album.html) ---------- */
+
+.back-link {
+  display: inline-block;
+  margin-top: 24px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--text);
+}
+
+/* Cover on the left, album info on the right, lined up along the bottom. */
+.album-page-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 32px;
+  padding: 24px 0 32px;
+}
+
+/* On this page the cover is a fixed 300px instead of filling the whole width.
+   flex-shrink: 0 stops flexbox from squishing it when space is tight. */
+.album-page-header .album-cover {
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.album-page-title {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 8px;
+}
+
+.album-page-artist {
+  font-size: 1.15rem;
+  margin: 0 0 4px;
+}
+
+.album-page-meta {
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.disc-heading {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin: 24px 0 8px;
+}
+
+/* The track list. "list-style: none" removes the browser's own 1. 2. 3. numbers,
+   since we show the track numbers ourselves. */
+.tracklist {
+  list-style: none;
+  margin: 0 0 48px;
+  padding: 0;
+}
+
+/* Each track is one row: number | title (stretches) | length. */
+.tracklist li {
+  display: flex;
+  gap: 16px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.track-number {
+  width: 2em;
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--text-muted);
+}
+
+.track-title {
+  flex: 1;       /* take up all the space between the number and the length */
+  min-width: 0;  /* let long titles wrap */
+}
+
+.track-length {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;  /* every digit the same width, so times line up */
+}
+
+
+/* ---------- 8. Small screens ----------
    A "media query": rules inside only apply when the screen is 480px wide or less. */
 @media (max-width: 480px) {
   .search-section h1 {
@@ -259,5 +369,24 @@ nav a:hover {
   .results-grid {
     grid-template-columns: repeat(2, 1fr);  /* always 2 columns on phones */
     gap: 16px;
+  }
+}
+
+/* Album page on phones and small tablets: stack the cover ABOVE the info
+   instead of side by side, because there isn't room for both. */
+@media (max-width: 600px) {
+  .album-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .album-page-header .album-cover {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .album-page-title {
+    font-size: 1.5rem;
   }
 }
