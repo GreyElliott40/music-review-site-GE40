@@ -99,7 +99,7 @@ function createAlbumHeader(album, trackCount, totalLength) {
 
   const title = document.createElement("h1");
   title.className = "album-page-title";
-  title.textContent = album.title;
+  title.textContent = fixCapitalization(album.title); // fixes sentence-case titles (musicbrainz.js)
 
   const artist = document.createElement("p");
   artist.className = "album-page-artist";
@@ -144,7 +144,7 @@ function createTracklist(media) {
     if (media.length > 1) {
       const discHeading = document.createElement("h3");
       discHeading.className = "disc-heading";
-      discHeading.textContent = "Disc " + disc.position + (disc.title ? ": " + disc.title : "");
+      discHeading.textContent = "Disc " + disc.position + (disc.title ? ": " + fixCapitalization(disc.title) : "");
       section.append(discHeading);
     }
 
@@ -161,7 +161,7 @@ function createTracklist(media) {
 
       const name = document.createElement("span");
       name.className = "track-title";
-      name.textContent = track.title;
+      name.textContent = fixCapitalization(track.title);
 
       const length = document.createElement("span");
       length.className = "track-length";
@@ -195,7 +195,7 @@ async function loadAlbum() {
     });
 
     // The browser tab shows the album name, e.g. "Abbey Road by The Beatles — Spin".
-    document.title = `${album.title} by ${getArtistName(album)} — Spin`;
+    document.title = `${fixCapitalization(album.title)} by ${getArtistName(album)} — Spin`;
 
     let media = [];
     const release = pickOriginalRelease(album.releases || []);

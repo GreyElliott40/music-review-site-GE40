@@ -88,7 +88,49 @@ async function fetchFromMusicBrainz(path, params) {
 }
 
 
-/* ---------- 3. Small helpers for album data ---------- */
+/* ---------- 3. Fix capitalization ----------
+   MusicBrainz writes Spanish (and some other) titles in "sentence case":
+   only the first word capitalized, e.g. "Un verano sin ti", "Me porto bonito".
+   Artists and streaming apps usually write "Un Verano Sin Ti".
+   MusicBrainz doesn't store the artist's version, so this is a RULE (a best guess):
+     - Only titles in plain sentence case are changed: the first letter is a capital
+       and EVERY other letter is lowercase.
+     - Anything styled on purpose is left alone: "IGOR", "luther", "DeBÍ TiRAR MáS FOToS",
+       "Exit Music (for a Film)" all have other capitals or start lowercase.
+     - Small Spanish words like "de", "la", "y" stay lowercase ("Después de la Playa"). */
+
+// A Set is a list made for one job: quickly checking "is this word in the list?"
+const SMALL_WORDS = new Set(["a", "al", "de", "del", "e", "el", "en", "la", "las", "los", "o", "u", "y"]);
+
+function fixCapitalization(title) {
+  if (!title) {
+    return title;
+  }
+
+  const firstLetter = title.charAt(0);
+  const rest = title.slice(1);
+
+  // Leave it alone unless the first letter is a capital AND everything after it
+  // is already lowercase. (A letter is "a capital" if lowercasing it changes it.)
+  const startsWithCapital = firstLetter !== firstLetter.toLowerCase();
+  const restIsAllLowercase = rest === rest.toLowerCase();
+  if (!startsWithCapital || !restIsAllLowercase) {
+    return title;
+  }
+
+  // Split into words, capitalize each one (except small words), and join back up.
+  const words = title.split(" ");
+  for (let i = 1; i < words.length; i++) { // start at 1: the first word is already capitalized
+    const word = words[i];
+    if (!SMALL_WORDS.has(word)) {
+      words[i] = word.charAt(0).toUpperCase() + word.slice(1);
+    }
+  }
+  return words.join(" ");
+}
+
+
+/* ---------- 4. Small helpers for album data ---------- */
 
 // Joins the artist names. Most albums have one artist, but some have several,
 // e.g. [{name: "Jay-Z", joinphrase: " & "}, {name: "Kanye West", joinphrase: ""}]
@@ -122,7 +164,7 @@ function createCoverImage(album, size) {
   const cover = document.createElement("img");
   cover.className = "album-cover";
   cover.src = `https://coverartarchive.org/release-group/${album.id}/front-${size}`;
-  cover.alt = "Cover of " + album.title;
+  cover.alt = "Cover of " + fixCapitalization(album.title);
 
   // addEventListener means "when this happens, run this function".
   // Here: when the image fails to load, swap it for the "No cover" box.
