@@ -18,13 +18,29 @@ const MUSICBRAINZ_API = "https://musicbrainz.org/ws/2/";
    loads, so going search → album → back could send requests too close together.
    sessionStorage is a small storage box the browser keeps for this tab, and it
    survives moving between pages. It only stores text, so we turn the time into
-   text when saving it and back into a number with Number() when reading it. */
+   text when saving it and back into a number with Number() when reading it.
+
+   Some browsers block storage entirely (private modes, "block all cookies").
+   Then even READING sessionStorage throws an error, which would break every
+   search. try/catch catches that, and we fall back to a normal variable,
+   which still works within one page. */
+let lastRequestTimeBackup = 0;
+
 function getLastRequestTime() {
-  return Number(sessionStorage.getItem("lastMusicBrainzRequest")) || 0; // 0 if nothing saved yet
+  try {
+    return Number(sessionStorage.getItem("lastMusicBrainzRequest")) || 0; // 0 if nothing saved yet
+  } catch (error) {
+    return lastRequestTimeBackup; // storage is blocked: use the variable instead
+  }
 }
 
 function saveLastRequestTime() {
-  sessionStorage.setItem("lastMusicBrainzRequest", String(Date.now()));
+  lastRequestTimeBackup = Date.now();
+  try {
+    sessionStorage.setItem("lastMusicBrainzRequest", String(lastRequestTimeBackup));
+  } catch (error) {
+    // Storage is blocked. Nothing to do: lastRequestTimeBackup already has the time.
+  }
 }
 
 async function waitForRateLimit() {
@@ -156,6 +172,12 @@ function createNoCoverBox() {
   return box;
 }
 
+// The Cover Art Archive address of an album's front cover. size is 250 (small) or 500 (big).
+// Used for the <img> below, and saved with each review so item 5 can show covers.
+function getCoverUrl(albumId, size) {
+  return `https://coverartarchive.org/release-group/${albumId}/front-${size}`;
+}
+
 // Builds the cover image for an album. size is 250 (small) or 500 (big).
 // The Cover Art Archive has a cover address for every album id. If the album
 // has no cover, the image fails to load and the "error" event fires.
@@ -163,7 +185,7 @@ function createCoverImage(album, size) {
   // document.createElement makes a new element. It isn't on the page yet.
   const cover = document.createElement("img");
   cover.className = "album-cover";
-  cover.src = `https://coverartarchive.org/release-group/${album.id}/front-${size}`;
+  cover.src = getCoverUrl(album.id, size);
   cover.alt = "Cover of " + fixCapitalization(album.title);
 
   // addEventListener means "when this happens, run this function".

@@ -1,14 +1,16 @@
 /* ============================================================
    album.js — the album page (album.html).
    Reads the album id from the address, asks MusicBrainz for the album
-   and its tracklist, and builds the page.
+   and its tracklist, builds the page, and runs the "Your review" box.
    Shared helpers (fetchFromMusicBrainz, getArtistName, getYear,
-   createCoverImage) live in musicbrainz.js, which loads first.
+   createCoverImage) live in musicbrainz.js, and saveReview / loadAllReviews /
+   deleteReview live in reviews.js. Both load before this file.
    ============================================================ */
 
 
 /* ---------- 1. Find the parts of the page we need ---------- */
-const albumDetail = document.getElementById("album-detail");
+const albumHeaderArea = document.getElementById("album-header-area");
+const tracklistArea = document.getElementById("tracklist-area");
 const statusMessage = document.getElementById("status-message");
 const backLink = document.getElementById("back-link");
 
@@ -178,7 +180,270 @@ function createTracklist(media) {
 }
 
 
-/* ---------- 6. Load everything ----------
+/* ---------- 6. Your review: stars, heart, text, Save and Delete ----------
+   This section keeps track of STATE: variables that describe what the review box
+   should show right now (the rating, the heart, what's saved).
+   The pattern every time you do something:
+     1. an event listener notices (a click, a key press, typing),
+     2. it changes a state variable (e.g. currentRating = 3.5),
+     3. it calls updateReviewBox(), which redraws the box FROM the state.
+   We never read the rating back out of the page. The variables are the single
+   source of truth, and the page just displays them. */
+
+// 6a. The parts of the review box (all in album.html)
+const reviewBox = document.getElementById("review-box");
+const starRating = document.getElementById("star-rating");
+const stars = starRating.querySelectorAll(".star"); // all 5 star <span>s, as a list
+const ratingLabel = document.getElementById("rating-label");
+const likeButton = document.getElementById("like-button");
+const likeLabel = document.getElementById("like-label");
+const reviewText = document.getElementById("review-text");
+const charCount = document.getElementById("char-count");
+const saveButton = document.getElementById("save-button");
+const deleteButton = document.getElementById("delete-button");
+const reviewMessage = document.getElementById("review-message");
+const deleteConfirm = document.getElementById("delete-confirm");
+const confirmDeleteButton = document.getElementById("confirm-delete-button");
+const cancelDeleteButton = document.getElementById("cancel-delete-button");
+const reviewedDate = document.getElementById("reviewed-date");
+
+// 6b. The state
+let currentRating = 0;        // what the stars show: 0 (no rating), 0.5, 1, 1.5 ... 5
+let currentLiked = false;     // is the heart on?
+let savedReview = null;       // this album's review as it is in storage (null = not reviewed yet)
+let albumForReview = null;    // the album's MusicBrainz data, saved along with the review
+let storageWorks = true;      // becomes false if localStorage can't be read
+let savedMessageTimer = null; // lets us cancel the timer that hides "Saved ✓"
+
+// 6c. Drawing the stars
+// For a rating like 3.5: stars 1–3 are full, star 4 is half, star 5 is empty.
+// The look of "full" and "half" is in style.css.
+function drawStars(rating) {
+  for (const star of stars) {
+    // data-star="3" in the HTML becomes star.dataset.star, which is the TEXT "3".
+    // Number() turns it into the number 3 so we can compare it.
+    const starNumber = Number(star.dataset.star);
+    // classList.toggle("full", true) adds the class; with false it removes it.
+    star.classList.toggle("full", rating >= starNumber);
+    star.classList.toggle("half", rating === starNumber - 0.5);
+  }
+  ratingLabel.textContent = rating === 0 ? "Rate this album" : rating + " out of 5";
+}
+
+// What a screen reader says: "No rating" or "3.5 out of 5 stars".
+function describeRating(rating) {
+  return rating === 0 ? "No rating" : rating + " out of 5 stars";
+}
+
+// "2026-11-14T18:22:05.123Z" → "Nov 14, 2026"
+function formatDate(isoText) {
+  const date = new Date(isoText); // turn the saved text back into a date
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// Puts a message next to the Save button. kind is "success", "error", or "" (plain).
+function showReviewMessage(text, kind) {
+  reviewMessage.textContent = text;
+  reviewMessage.className = "review-message " + (kind || "");
+}
+
+// 6d. Comparing the screen to what's saved
+// Is anything different from the saved review? (Or from an empty one, if you never saved.)
+// This decides whether Save is clickable.
+function hasUnsavedChanges() {
+  const saved = savedReview || { rating: 0, liked: false, text: "" };
+  return currentRating !== saved.rating ||
+         currentLiked !== saved.liked ||
+         reviewText.value.trim() !== saved.text; // .trim(): extra spaces at the ends don't count
+}
+
+// 6e. Redraw the whole box from the state
+function updateReviewBox() {
+  drawStars(currentRating);
+  // setAttribute changes an attribute in the HTML, like aria-valuetext="3.5 out of 5 stars".
+  starRating.setAttribute("aria-valuenow", currentRating);
+  starRating.setAttribute("aria-valuetext", describeRating(currentRating));
+
+  likeButton.setAttribute("aria-pressed", currentLiked); // true becomes "true"
+  likeLabel.textContent = currentLiked ? "Liked" : "Like";
+
+  const length = reviewText.value.length;
+  charCount.textContent = length + " / " + REVIEW_MAX_LENGTH;
+  charCount.classList.toggle("near-limit", length > REVIEW_MAX_LENGTH - 100); // last 100 characters
+
+  // Save works only if storage works, something changed, AND there's a rating (it's required).
+  saveButton.disabled = !storageWorks || !hasUnsavedChanges() || currentRating === 0;
+
+  deleteButton.hidden = savedReview === null; // Delete only makes sense if there's a saved review
+  reviewedDate.textContent = savedReview ? "Reviewed " + formatDate(savedReview.savedAt) : "";
+}
+
+// Every listener below calls this after changing the state.
+function onReviewEdited() {
+  clearTimeout(savedMessageTimer); // an edit cancels the "Saved ✓" fade-out
+  if (!storageWorks) {
+    // keep showing the storage error message
+  } else if (currentRating === 0 && hasUnsavedChanges()) {
+    // You changed something but there's no rating, so Save stays off. Say why.
+    showReviewMessage(savedReview
+      ? "A rating is required. To remove your review, use Delete review."
+      : "Pick a star rating to save.");
+  } else {
+    showReviewMessage("");
+  }
+  updateReviewBox();
+}
+
+// 6f. The mouse and the stars
+// Which rating is the mouse pointing at? The left half of star 3 means 2.5,
+// the right half means 3.
+function ratingFromMouse(star, event) {
+  const starNumber = Number(star.dataset.star);
+  // getBoundingClientRect() tells us where the star is on the screen (its left edge
+  // and width). event.clientX is the mouse's position, measured the same way.
+  const box = star.getBoundingClientRect();
+  const onLeftHalf = event.clientX < box.left + box.width / 2;
+  return onLeftHalf ? starNumber - 0.5 : starNumber;
+}
+
+for (const star of stars) {
+  // "mousemove" fires again and again as the mouse moves over a star.
+  // We PREVIEW that rating (draw it) without changing the state.
+  star.addEventListener("mousemove", function (event) {
+    drawStars(ratingFromMouse(star, event));
+  });
+
+  // "click" sets the rating. Clicking the rating you already have clears it.
+  // On a phone, a tap counts as a click, so this handles taps too.
+  star.addEventListener("click", function (event) {
+    const clickedRating = ratingFromMouse(star, event);
+    currentRating = clickedRating === currentRating ? 0 : clickedRating;
+    onReviewEdited();
+  });
+}
+
+// "mouseleave" fires when the mouse leaves the stars: stop previewing, show the real rating.
+starRating.addEventListener("mouseleave", function () {
+  drawStars(currentRating);
+});
+
+// 6g. The keyboard and the stars
+// After you Tab to the stars, "keydown" fires for every key you press.
+// event.key is the name of the key, e.g. "ArrowRight".
+starRating.addEventListener("keydown", function (event) {
+  let newRating;
+  if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+    newRating = Math.min(5, currentRating + 0.5); // Math.min keeps it from going above 5
+  } else if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+    newRating = Math.max(0, currentRating - 0.5); // Math.max keeps it from going below 0
+  } else if (event.key === "Home") {
+    newRating = 0; // Home clears the rating
+  } else if (event.key === "End") {
+    newRating = 5;
+  } else {
+    return; // any other key (like Tab): ignore it and let the browser do its normal thing
+  }
+  event.preventDefault(); // stop the arrow keys from ALSO scrolling the page
+  currentRating = newRating;
+  onReviewEdited();
+});
+
+// 6h. The heart and the text box
+likeButton.addEventListener("click", function () {
+  currentLiked = !currentLiked; // "!" flips it: true becomes false, false becomes true
+  onReviewEdited();
+});
+
+// "input" fires every time the text changes: typing, pasting, deleting.
+reviewText.addEventListener("input", onReviewEdited);
+
+// 6i. Save
+saveButton.addEventListener("click", function () {
+  // saveReview (reviews.js) adds the date and returns the saved review, or null if it failed.
+  const saved = saveReview({
+    albumId: albumForReview.id,
+    title: albumForReview.title,
+    artist: getArtistName(albumForReview),
+    // Just the year, or "" if MusicBrainz doesn't know it.
+    year: (albumForReview["first-release-date"] || "").slice(0, 4),
+    coverUrl: getCoverUrl(albumForReview.id, 250),
+    rating: currentRating,
+    liked: currentLiked,
+    text: reviewText.value.trim(),
+  });
+
+  if (saved === null) {
+    showReviewMessage("Couldn't save your review. Your browser may be blocking storage (private browsing can do this).", "error");
+    return;
+  }
+
+  savedReview = saved;
+  reviewText.value = saved.text; // show exactly what was saved (without extra spaces)
+  updateReviewBox();
+  showReviewMessage("Saved ✓", "success");
+
+  // Hide "Saved ✓" after 3 seconds. setTimeout runs a function later and returns an id;
+  // we keep the id so a new edit can cancel it (see onReviewEdited).
+  clearTimeout(savedMessageTimer);
+  savedMessageTimer = setTimeout(function () {
+    showReviewMessage("");
+  }, 3000);
+});
+
+// 6j. Delete, with a confirmation on the page
+deleteButton.addEventListener("click", function () {
+  deleteConfirm.hidden = false;
+  cancelDeleteButton.focus(); // move keyboard focus to the safe choice
+});
+
+cancelDeleteButton.addEventListener("click", function () {
+  deleteConfirm.hidden = true;
+});
+
+confirmDeleteButton.addEventListener("click", function () {
+  deleteConfirm.hidden = true;
+  if (!deleteReview(albumForReview.id)) {
+    showReviewMessage("Couldn't delete your review. Your browser may be blocking storage.", "error");
+    return;
+  }
+
+  // Back to an empty, never-reviewed box.
+  savedReview = null;
+  currentRating = 0;
+  currentLiked = false;
+  reviewText.value = "";
+  updateReviewBox();
+  showReviewMessage("Review deleted.");
+});
+
+// 6k. Set up the box once the album has loaded (called from loadAlbum below)
+function setUpReviewBox(album) {
+  albumForReview = album;
+  reviewText.maxLength = REVIEW_MAX_LENGTH; // the browser stops typing at 1000 characters
+
+  const allReviews = loadAllReviews(); // reviews.js: an object, or null if storage failed
+  if (allReviews === null) {
+    storageWorks = false;
+    showReviewMessage("Your saved reviews couldn't be loaded, so saving is turned off to avoid overwriting them. Private browsing or strict browser settings can cause this.", "error");
+  } else {
+    // Look up this album by its id. If you never reviewed it, that's undefined,
+    // and "|| null" turns it into null to match how we use savedReview.
+    savedReview = allReviews[album.id] || null;
+  }
+
+  // Already reviewed? Fill the box in with what you saved.
+  if (savedReview) {
+    currentRating = savedReview.rating;
+    currentLiked = savedReview.liked;
+    reviewText.value = savedReview.text;
+  }
+
+  updateReviewBox();
+  reviewBox.hidden = false; // show the box
+}
+
+
+/* ---------- 7. Load everything ----------
    Two requests, one after the other (the rate limiter spaces them 1 second apart):
      1. The album ("release group"), plus the list of its editions.
      2. The tracklist of the edition we picked. */
@@ -218,7 +483,9 @@ async function loadAlbum() {
     }
 
     showMessage(""); // clear "Loading..."
-    albumDetail.append(createAlbumHeader(album, trackCount, totalLength), createTracklist(media));
+    albumHeaderArea.append(createAlbumHeader(album, trackCount, totalLength));
+    setUpReviewBox(album); // section 6: show the review box, filled in if you reviewed this before
+    tracklistArea.append(createTracklist(media));
   } catch (error) {
     console.error(error);
     // 404 = no album with that id. 400 = the id isn't even in the right format.
