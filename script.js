@@ -132,7 +132,7 @@ function createAlbumCard(album, searchText) {
   // textContent (not innerHTML) puts the text in as plain text. That way an album
   // named something like "<b>hi</b>" shows up as those characters instead of
   // being treated as HTML code. It's a safety habit worth keeping.
-  title.textContent = album.title;
+  title.textContent = fixCapitalization(album.title); // "Un verano sin ti" → "Un Verano Sin Ti" (musicbrainz.js)
 
   const artist = document.createElement("p");
   artist.className = "album-artist";
