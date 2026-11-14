@@ -43,7 +43,8 @@ Grey, a beginner who is learning to code through this project. That changes how 
 ## Status
 - Layout done: `index.html` (header, search bar, results grid, footer) and `style.css` (dark theme, responsive grid).
 - Album search done: `script.js` searches MusicBrainz release groups (studio albums only: no singles, live albums or compilations), shows cover / title / artist / year cards, a "No cover" box when art is missing, and Searching / No results / error messages. Waits at least 1 second between requests and retries once on a 503 ("too busy").
-- Search quality is decent but imperfect: searching an artist name can also return albums *titled* with that name (e.g. "radiohead"). Ranking lives in `buildQuery()` in `script.js`.
+- Search forgives typos: capitals and accents never mattered; words of 4+ letters match up to 2 letters off (`word~`). If the strict search (every word must match) finds nothing, a second "loose" search matches albums with only SOME of the words and says "Here are the closest matches". Query building lives in `buildQuery()` in `script.js`.
+- Search limits: MusicBrainz counts swapped letters as 2 changes, so some typos are too far for `~`; the loose search catches most of those, but the right album isn't always #1. MusicBrainz has no popularity data, so for common titles ("What's Going On") the famous album may not rank first. Searching an artist name can also return albums *titled* with that name (e.g. "radiohead").
 - Album cards are not clickable yet.
 - Working site name is "Spin" (a placeholder; Grey can rename it).
 - Next step: Milestone 1, item 3 (album detail page). Clicking a card should open it, using the album's MusicBrainz id.
@@ -53,3 +54,4 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - MusicBrainz instead of Spotify: it's free and needs no API key or developer approval.
 - Search MusicBrainz *release groups*, not releases, so each album shows up once instead of once per edition.
 - Cover images come straight from the Cover Art Archive with an <img> tag; the 1-request-per-second limit is only for the MusicBrainz API.
+- Typo handling uses MusicBrainz's own fuzzy search plus a looser fallback search, instead of fixing spelling ourselves, to keep `script.js` simple.
