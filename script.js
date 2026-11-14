@@ -48,41 +48,83 @@ async function waitForRateLimit() {
 /* ---------- 3. Build the search query ----------
    MusicBrainz uses a special search language. By default it only searches
    album TITLES, so typing "radiohead" would find albums named "Radiohead".
-   This builds a query that matches the title OR the artist, and keeps only
-   studio albums (no singles, live albums or compilations). */
-function buildQuery(text) {
-  // Backslashes and quotes have special meanings in the search language,
-  // so we put a backslash in front of them to make them plain characters.
-  const safeText = text.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+   These functions build a query that matches the title OR the artist,
+   forgives small typos, and keeps only studio albums
+   (no singles, live albums or compilations).
+   Capital letters and accents don't matter: MusicBrainz already
+   treats "DeBÍ" and "debi" as the same word. */
 
-  // Every word must appear in either the title or the artist name.
-  // "ok computer" becomes:
-  //   (releasegroup:"ok" OR artist:"ok") AND (releasegroup:"computer" OR artist:"computer")
-  const words = safeText.split(/\s+/); // split on spaces
+// Characters like  ( ) : " ~ / *  are commands in the search language.
+// To search for them as plain text, each one needs a backslash in front.
+// "$&" in the replacement means "the character that was matched".
+function escapeWord(word) {
+  return word.replace(/[+\-&|!(){}\[\]^"~*?:\\\/]/g, "\\$&");
+}
+
+// Builds the query for ONE word: it can be in the title or the artist name.
+function buildWordPart(word) {
+  const safeWord = escapeWord(word);
+
+  // ^2 is a "boost": the exactly spelled word counts double when ranking results.
+  let part = `releasegroup:${safeWord}^2 OR artist:${safeWord}^2`;
+
+  // TYPO TOLERANCE: "word~" means "this word, or one up to 2 letters different".
+  // So "kendrik~" finds "kendrick" and "buterfly~" finds "butterfly".
+  // We skip it for short words: for "ok" or "mas", 2 letters off matches almost anything.
+  if (word.length >= 4) {
+    part += ` OR releasegroup:${safeWord}~ OR artist:${safeWord}~`;
+  }
+
+  return "(" + part + ")";
+}
+
+// Builds the full query. There are two modes:
+//   matchEveryWord = true  → STRICT: every word must match (allowing small typos).
+//   matchEveryWord = false → LOOSE: albums matching SOME of the words count too.
+//                            We only use this if the strict search finds nothing.
+function buildQuery(text, matchEveryWord) {
+  // Lowercase everything. Otherwise typing "AND", "OR" or "NOT" in capitals
+  // would be read as a command instead of a word.
+  const lowerText = text.toLowerCase();
+
+  // One query part per word, glued together with AND (strict) or OR (loose).
+  // "ok computer" in strict mode becomes roughly:
+  //   (releasegroup:ok OR artist:ok) AND (releasegroup:computer~ OR artist:computer~ ...)
+  const words = lowerText.split(/\s+/); // split on spaces
   const wordParts = [];
   for (const word of words) {
-    wordParts.push(`(releasegroup:"${word}" OR artist:"${word}")`);
+    wordParts.push(buildWordPart(word));
   }
-  const everyWord = wordParts.join(" AND ");
+  const glue = matchEveryWord ? " AND " : " OR ";
+  // ↑ This is a "ternary": condition ? valueIfTrue : valueIfFalse. A one-line if/else.
+  const wordsQuery = wordParts.join(glue);
 
-  // ^3 and ^2 are "boosts": an exact match of the whole phrase on the artist
-  // or the title ranks higher. That's what puts Radiohead's albums near the top
-  // when you search "radiohead", and keeps "AC/DC" from being split into "AC" and "DC".
-  return `(artist:"${safeText}"^3 OR releasegroup:"${safeText}"^2 OR (${everyWord}))` +
-         ` AND primarytype:album AND NOT secondarytype:*`;
+  // Only studio albums: no singles, EPs, live albums, compilations, etc.
+  const albumsOnly = " AND primarytype:album AND NOT secondarytype:*";
+
+  if (!matchEveryWord) {
+    return "(" + wordsQuery + ")" + albumsOnly;
+  }
+
+  // Strict mode also checks the whole phrase in quotes, with a big boost (^3, ^2).
+  // That puts Radiohead's albums near the top when you search "radiohead",
+  // and keeps "AC/DC" from being split into "AC" and "DC".
+  // Inside quotes, only backslashes and quote marks need a backslash in front.
+  const safePhrase = lowerText.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `(artist:"${safePhrase}"^3 OR releasegroup:"${safePhrase}"^2 OR (${wordsQuery}))` + albumsOnly;
 }
 
 
 /* ---------- 4. Ask MusicBrainz for albums ----------
    "async" marks a function that does slow work (like talking to another website)
    and is allowed to use "await" inside it. */
-async function searchAlbums(text) {
+async function searchAlbums(text, matchEveryWord) {
   await waitForRateLimit();
 
   // URLSearchParams builds the "?query=...&fmt=json" part of a web address and
   // safely encodes spaces and symbols (a space becomes %20, etc.).
   const params = new URLSearchParams({
-    query: buildQuery(text),
+    query: buildQuery(text, matchEveryWord),
     fmt: "json",  // ask for JSON instead of the default XML
     limit: "24",  // at most 24 results
   });
@@ -222,12 +264,27 @@ searchForm.addEventListener("submit", async function (event) {
   // try/catch: run the code in "try". If anything inside it fails
   // (no internet, MusicBrainz is down...), jump to "catch" instead of crashing.
   try {
-    const albums = await searchAlbums(text);
+    // First try: every word has to match (small typos allowed).
+    let albums = await searchAlbums(text, true);
+    let showingCloseMatches = false;
+
+    // Nothing? One word might be too misspelled ("tiara" for "tirar").
+    // Try again, accepting albums that match only some of the words.
+    // waitForRateLimit() inside searchAlbums keeps this 1 second after the first request.
+    if (albums.length === 0) {
+      showMessage("No exact matches. Looking for close matches...");
+      albums = await searchAlbums(text, false);
+      showingCloseMatches = true;
+    }
 
     if (albums.length === 0) {
       showMessage(`No albums found for "${text}". Try different words.`);
     } else {
-      showMessage(""); // clear the "Searching..." message
+      if (showingCloseMatches) {
+        showMessage(`No exact matches for "${text}". Here are the closest matches:`);
+      } else {
+        showMessage(""); // clear the "Searching..." message
+      }
       showResults(albums);
     }
   } catch (error) {
