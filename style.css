@@ -529,6 +529,20 @@ nav a[aria-current="page"] {
   margin: 6px 0 20px;
 }
 
+/* "Saved ✓" right after a star or heart click. */
+.quick-message {
+  margin-left: 8px;
+  font-size: 0.85rem;
+}
+
+.quick-message.success {
+  color: var(--accent);
+}
+
+.quick-message.error {
+  color: var(--danger);
+}
+
 .review-text-label {
   display: block;
   font-weight: 600;

@@ -92,19 +92,25 @@ function readReviews() {
 }
 
 
-/* ---------- 4. Stats and histogram (always for ALL reviews) ---------- */
+/* ---------- 4. Stats and histogram (always for ALL reviews) ----------
+   An album can be in your list with no rating (just a heart or a written review),
+   stored as rating 0. Those count as albums, but not toward the average or histogram. */
 function showStats(reviews) {
   let ratingTotal = 0;
+  let ratedCount = 0;
   let likedCount = 0;
   for (const review of reviews) {
-    ratingTotal += review.rating;
+    if (review.rating > 0) {
+      ratingTotal += review.rating;
+      ratedCount += 1;
+    }
     if (review.liked) {
       likedCount += 1;
     }
   }
   statCount.textContent = reviews.length;
   // toFixed(1) rounds to one decimal place and always shows it: 4 → "4.0", 3.75 → "3.8".
-  statAverage.textContent = (ratingTotal / reviews.length).toFixed(1) + " ★";
+  statAverage.textContent = ratedCount === 0 ? "–" : (ratingTotal / ratedCount).toFixed(1) + " ★";
   statLiked.textContent = likedCount;
 }
 
@@ -172,6 +178,13 @@ function artistSortName(artist) {
   return String(artist || "").replace(/^the\s+/i, ""); // ^ = start, \s+ = spaces, i = any capitals
 }
 
+// Albums with no rating go after rated ones (used by the Highest/Lowest sorts).
+function compareUnratedLast(a, b) {
+  const aUnrated = a.rating === 0 ? 1 : 0;
+  const bUnrated = b.rating === 0 ? 1 : 0;
+  return aUnrated - bUnrated;
+}
+
 // A sort "compare function" gets two reviews and returns a negative number if
 // a should come first, positive if b should, or 0 if it doesn't matter.
 // "x || y" means: use x, but if it's 0 (a tie), use y instead.
@@ -179,9 +192,9 @@ function compareReviews(a, b) {
   const newestFirst = String(b.savedAt).localeCompare(String(a.savedAt)); // dates in ISO text sort correctly
   switch (view.sort) {
     case "highest":
-      return b.rating - a.rating || newestFirst;
+      return compareUnratedLast(a, b) || b.rating - a.rating || newestFirst;
     case "lowest":
-      return a.rating - b.rating || newestFirst;
+      return compareUnratedLast(a, b) || a.rating - b.rating || newestFirst;
     case "artist":
       return compareText(artistSortName(a.artist), artistSortName(b.artist)) || compareText(a.title, b.title);
     case "year": {
@@ -295,9 +308,12 @@ function createReviewCard(review) {
     info.append(year);
   }
 
+  // Stars (if rated) and the heart (if liked). An album with neither has no row.
   const ratingRow = document.createElement("div");
   ratingRow.className = "review-card-rating";
-  ratingRow.append(createStarDisplay(review.rating)); // reviews.js, same stars as the album page
+  if (review.rating > 0) {
+    ratingRow.append(createStarDisplay(review.rating)); // reviews.js, same stars as the album page
+  }
   if (review.liked) {
     const heart = document.createElement("span");
     heart.className = "review-card-heart";
@@ -306,7 +322,9 @@ function createReviewCard(review) {
     heart.setAttribute("aria-label", "Liked");
     ratingRow.append(heart);
   }
-  info.append(ratingRow);
+  if (ratingRow.children.length > 0) {
+    info.append(ratingRow);
+  }
 
   const text = createReviewText(review.text);
   if (text) {

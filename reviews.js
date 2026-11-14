@@ -38,11 +38,14 @@
        artist:   "The Beatles",
        year:     "1969",
        coverUrl: "https://coverartarchive.org/release-group/9162580e-.../front-250",
-       rating:   4.5,              // 0.5 to 5, in steps of 0.5
+       rating:   4.5,              // 0.5 to 5 in steps of 0.5, or 0 for "no rating"
        liked:    true,             // the heart
        text:     "Side two...",    // the written review ("" if none)
        savedAt:  "2026-11-14T18:22:05.123Z"   // when it was last saved (see saveReview)
      }
+   Like Letterboxd, any ONE of rating, heart or text is enough for an entry.
+   The album page removes the entry when all three are cleared.
+
    The album info (title, artist, year, cover) is saved WITH the review so the
    "My reviews" page can list everything without asking MusicBrainz again,
    which would take 1 second per album because of the rate limit. */
