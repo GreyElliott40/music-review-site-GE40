@@ -181,6 +181,12 @@ function createTracklist(media) {
 
 
 /* ---------- 6. Your review: stars, heart, text, Save and Delete ----------
+   Works like Letterboxd:
+     - Clicking a star or the heart saves IMMEDIATELY (no Save button needed).
+     - The written review has its own "Save review" button, so a half-written
+       review is never saved by accident.
+     - Any one of rating, heart or text is enough to keep the album in My reviews.
+       Clear all three and it's removed.
    This section keeps track of STATE: variables that describe what the review box
    should show right now (the rating, the heart, what's saved).
    The pattern every time you do something:
@@ -202,6 +208,7 @@ const charCount = document.getElementById("char-count");
 const saveButton = document.getElementById("save-button");
 const deleteButton = document.getElementById("delete-button");
 const reviewMessage = document.getElementById("review-message");
+const quickMessage = document.getElementById("quick-message"); // "Saved ✓" next to the stars
 const deleteConfirm = document.getElementById("delete-confirm");
 const confirmDeleteButton = document.getElementById("confirm-delete-button");
 const cancelDeleteButton = document.getElementById("cancel-delete-button");
@@ -210,10 +217,11 @@ const reviewedDate = document.getElementById("reviewed-date");
 // 6b. The state
 let currentRating = 0;        // what the stars show: 0 (no rating), 0.5, 1, 1.5 ... 5
 let currentLiked = false;     // is the heart on?
-let savedReview = null;       // this album's review as it is in storage (null = not reviewed yet)
+let savedReview = null;       // this album's review as it is in storage (null = nothing saved)
 let albumForReview = null;    // the album's MusicBrainz data, saved along with the review
 let storageWorks = true;      // becomes false if localStorage can't be read
-let savedMessageTimer = null; // lets us cancel the timer that hides "Saved ✓"
+let savedMessageTimer = null; // lets us cancel the timer that hides "Saved ✓" by the Save button
+let quickMessageTimer = null; // same, for the "Saved ✓" next to the stars
 
 // 6c. Drawing the stars
 // For a rating like 3.5: stars 1–3 are full, star 4 is half, star 5 is empty.
@@ -230,17 +238,81 @@ function showReviewMessage(text, kind) {
   reviewMessage.className = "review-message " + (kind || "");
 }
 
-// 6d. Comparing the screen to what's saved
-// Is anything different from the saved review? (Or from an empty one, if you never saved.)
-// This decides whether Save is clickable.
-function hasUnsavedChanges() {
-  const saved = savedReview || { rating: 0, liked: false, text: "" };
-  return currentRating !== saved.rating ||
-         currentLiked !== saved.liked ||
-         reviewText.value.trim() !== saved.text; // .trim(): extra spaces at the ends don't count
+// Puts a short message next to the stars, and hides it after 2 seconds
+// (errors stay until the next change).
+function showQuickMessage(text, kind) {
+  clearTimeout(quickMessageTimer);
+  quickMessage.textContent = text;
+  quickMessage.className = "quick-message " + (kind || "");
+  if (kind !== "error") {
+    quickMessageTimer = setTimeout(function () {
+      quickMessage.textContent = "";
+    }, 2000);
+  }
+}
+
+// 6d. Saving
+// Writes rating + heart + text to storage. If all three are empty, the album is
+// removed from your reviews instead. Returns true if it worked.
+function storeReview(rating, liked, text) {
+  if (!storageWorks) {
+    return false;
+  }
+
+  if (rating === 0 && !liked && text === "") {
+    if (savedReview === null) {
+      return true; // nothing saved and nothing to save
+    }
+    if (!deleteReview(albumForReview.id)) { // reviews.js
+      return false;
+    }
+    savedReview = null;
+    return true;
+  }
+
+  // saveReview (reviews.js) adds the date and returns the saved review, or null if it failed.
+  const saved = saveReview({
+    albumId: albumForReview.id,
+    title: albumForReview.title,
+    artist: getArtistName(albumForReview),
+    // Just the year, or "" if MusicBrainz doesn't know it.
+    year: (albumForReview["first-release-date"] || "").slice(0, 4),
+    coverUrl: getCoverUrl(albumForReview.id, 250),
+    rating: rating,
+    liked: liked,
+    text: text,
+  });
+  if (saved === null) {
+    return false;
+  }
+  savedReview = saved;
+  return true;
+}
+
+// The text that's currently saved ("" if none).
+function getSavedText() {
+  return savedReview ? savedReview.text : "";
+}
+
+// Called right after a star or heart change. Saves the rating and heart
+// together with the ALREADY-saved text: a half-written review in the box stays
+// unsaved until you click "Save review".
+function saveRatingAndHeart() {
+  if (storeReview(currentRating, currentLiked, getSavedText())) {
+    showQuickMessage(savedReview ? "Saved ✓" : "Removed from your reviews", "success");
+  } else {
+    showQuickMessage("Not saved", "error");
+  }
+  updateReviewBox();
 }
 
 // 6e. Redraw the whole box from the state
+// Is the text in the box different from the saved text? This decides whether
+// "Save review" is clickable. (.trim(): extra spaces at the ends don't count.)
+function hasUnsavedText() {
+  return reviewText.value.trim() !== getSavedText();
+}
+
 function updateReviewBox() {
   drawStars(currentRating);
   // setAttribute changes an attribute in the HTML, like aria-valuetext="3.5 out of 5 stars".
@@ -254,27 +326,10 @@ function updateReviewBox() {
   charCount.textContent = length + " / " + REVIEW_MAX_LENGTH;
   charCount.classList.toggle("near-limit", length > REVIEW_MAX_LENGTH - 100); // last 100 characters
 
-  // Save works only if storage works, something changed, AND there's a rating (it's required).
-  saveButton.disabled = !storageWorks || !hasUnsavedChanges() || currentRating === 0;
+  saveButton.disabled = !storageWorks || !hasUnsavedText();
 
-  deleteButton.hidden = savedReview === null; // Delete only makes sense if there's a saved review
+  deleteButton.hidden = savedReview === null; // Delete only makes sense if something is saved
   reviewedDate.textContent = savedReview ? "Reviewed " + formatReviewDate(savedReview.savedAt) : "";
-}
-
-// Every listener below calls this after changing the state.
-function onReviewEdited() {
-  clearTimeout(savedMessageTimer); // an edit cancels the "Saved ✓" fade-out
-  if (!storageWorks) {
-    // keep showing the storage error message
-  } else if (currentRating === 0 && hasUnsavedChanges()) {
-    // You changed something but there's no rating, so Save stays off. Say why.
-    showReviewMessage(savedReview
-      ? "A rating is required. To remove your review, use Delete review."
-      : "Pick a star rating to save.");
-  } else {
-    showReviewMessage("");
-  }
-  updateReviewBox();
 }
 
 // 6f. The mouse and the stars
@@ -296,12 +351,12 @@ for (const star of stars) {
     drawStars(ratingFromMouse(star, event));
   });
 
-  // "click" sets the rating. Clicking the rating you already have clears it.
+  // "click" sets the rating and saves it. Clicking the rating you already have clears it.
   // On a phone, a tap counts as a click, so this handles taps too.
   star.addEventListener("click", function (event) {
     const clickedRating = ratingFromMouse(star, event);
     currentRating = clickedRating === currentRating ? 0 : clickedRating;
-    onReviewEdited();
+    saveRatingAndHeart();
   });
 }
 
@@ -327,53 +382,49 @@ starRating.addEventListener("keydown", function (event) {
     return; // any other key (like Tab): ignore it and let the browser do its normal thing
   }
   event.preventDefault(); // stop the arrow keys from ALSO scrolling the page
+  if (newRating === currentRating) {
+    return; // e.g. ArrowRight at 5: nothing changed, nothing to save
+  }
   currentRating = newRating;
-  onReviewEdited();
+  saveRatingAndHeart();
 });
 
 // 6h. The heart and the text box
 likeButton.addEventListener("click", function () {
   currentLiked = !currentLiked; // "!" flips it: true becomes false, false becomes true
-  onReviewEdited();
+  saveRatingAndHeart();
 });
 
 // "input" fires every time the text changes: typing, pasting, deleting.
-reviewText.addEventListener("input", onReviewEdited);
+// Typing doesn't save; it just turns "Save review" on.
+reviewText.addEventListener("input", function () {
+  clearTimeout(savedMessageTimer);
+  if (storageWorks) {
+    showReviewMessage("");
+  }
+  updateReviewBox();
+});
 
-// 6i. Save
+// 6i. Save the written review (along with the current rating and heart)
 saveButton.addEventListener("click", function () {
-  // saveReview (reviews.js) adds the date and returns the saved review, or null if it failed.
-  const saved = saveReview({
-    albumId: albumForReview.id,
-    title: albumForReview.title,
-    artist: getArtistName(albumForReview),
-    // Just the year, or "" if MusicBrainz doesn't know it.
-    year: (albumForReview["first-release-date"] || "").slice(0, 4),
-    coverUrl: getCoverUrl(albumForReview.id, 250),
-    rating: currentRating,
-    liked: currentLiked,
-    text: reviewText.value.trim(),
-  });
-
-  if (saved === null) {
+  if (!storeReview(currentRating, currentLiked, reviewText.value.trim())) {
     showReviewMessage("Couldn't save your review. Your browser may be blocking storage (private browsing can do this).", "error");
     return;
   }
 
-  savedReview = saved;
-  reviewText.value = saved.text; // show exactly what was saved (without extra spaces)
+  reviewText.value = getSavedText(); // show exactly what was saved (without extra spaces)
   updateReviewBox();
-  showReviewMessage("Saved ✓", "success");
+  showReviewMessage(savedReview ? "Saved ✓" : "Removed from your reviews", "success");
 
-  // Hide "Saved ✓" after 3 seconds. setTimeout runs a function later and returns an id;
-  // we keep the id so a new edit can cancel it (see onReviewEdited).
+  // Hide the message after 3 seconds. setTimeout runs a function later and returns an id;
+  // we keep the id so typing again can cancel it.
   clearTimeout(savedMessageTimer);
   savedMessageTimer = setTimeout(function () {
     showReviewMessage("");
   }, 3000);
 });
 
-// 6j. Delete, with a confirmation on the page
+// 6j. Delete everything for this album, with a confirmation on the page
 deleteButton.addEventListener("click", function () {
   deleteConfirm.hidden = false;
   cancelDeleteButton.focus(); // move keyboard focus to the safe choice

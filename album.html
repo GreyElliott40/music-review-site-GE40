@@ -55,8 +55,12 @@
         </button>
       </div>
 
-      <!-- "Rate this album", or "3.5 out of 5" once you've picked. -->
-      <p class="rating-label" id="rating-label">Rate this album</p>
+      <!-- "Rate this album", or "3.5 out of 5" once you've picked, plus a short
+           "Saved ✓" after a star or heart click (those save right away). -->
+      <p class="rating-label">
+        <span id="rating-label">Rate this album</span>
+        <span class="quick-message" id="quick-message" aria-live="polite"></span>
+      </p>
 
       <label class="review-text-label" for="review-text">Write a review (optional)</label>
       <textarea class="review-text" id="review-text" rows="5"
@@ -65,7 +69,7 @@
       <p class="char-count" id="char-count"></p>
 
       <div class="review-actions">
-        <button type="button" class="button button-primary" id="save-button" disabled>Save</button>
+        <button type="button" class="button button-primary" id="save-button" disabled>Save review</button>
         <!-- Only shown once a review exists. -->
         <button type="button" class="button button-plain" id="delete-button" hidden>Delete review</button>
         <!-- "Saved ✓", hints, and error messages. -->
