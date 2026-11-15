@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!-- 404.html — GitHub Pages shows this page for ANY address that doesn't exist,
+     e.g. .../music-review-site-GE40/albums/abbey-road. The address bar keeps the
+     mistyped address, so relative links here would be read from inside that fake
+     folder (".../albums/index.html") and break. The script below fixes that. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Must run before ANY relative link below. It adds <base href="...">, which tells
+       the browser "read every relative link from the site's root folder":
+         - on GitHub Pages (*.github.io) the root is the first folder, "/music-review-site-GE40/";
+         - on a site at the top of its own domain (e.g. Vercel later), it's "/";
+         - opened from your computer (file://) no base is needed. -->
+  <script>
+    (function () {
+      if (location.protocol === "file:") {
+        return;
+      }
+      var firstFolder = location.pathname.split("/")[1];
+      var root = location.hostname.endsWith(".github.io") && firstFolder ? "/" + firstFolder + "/" : "/";
+      var base = document.createElement("base");
+      base.href = root;
+      document.head.appendChild(base);
+    })();
+  </script>
+
+  <title>Page not found — Spin</title>
+  <meta name="description" content="This page doesn't exist. Search for an album on Spin instead.">
+  <meta name="robots" content="noindex">
+  <meta property="og:site_name" content="Spin">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Page not found — Spin">
+  <meta property="og:description" content="This page doesn't exist. Search for an album on Spin instead.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER and FOOTER: layout.js fills these in, so every page shares one copy. -->
+  <header class="site-header" id="site-header"></header>
+
+  <main class="container">
+    <div class="not-found">
+      <p class="not-found-code" aria-hidden="true">404</p>
+      <h1>This page skipped</h1>
+      <p>There's nothing at this address. The link might be mistyped or out of date.</p>
+      <a class="button button-primary" href="index.html">Search for an album</a>
+      <a class="button button-plain" href="my-reviews.html">My reviews</a>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+
+  <script src="layout.js"></script>
+
+</body>
+</html>

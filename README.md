@@ -1,5 +1,7 @@
 A Letterboxd-style website for music. Search for any album, rate it from one to five stars, write a review, and keep a profile of everything you've listened to.
 
+**Live site:** [https://greyelliott40.github.io/music-review-site-GE40/](https://greyelliott40.github.io/music-review-site-GE40/)
+
 ## Why this exists
 
 Letterboxd turned logging films into a habit and a community, but music doesn't have a real equivalent. The places that do exist for reviewing albums tend to be cluttered, outdated, or built for critics rather than everyday listeners. This project tries to build the simple version that's missing: a clean place to rate what you hear, write a few honest sentences about it, and look back on your listening over time.
@@ -25,4 +27,4 @@ This is also a learning project. I'm building it to learn web development from t
 
 ## Status
 
-🚧 In progress: Milestone 1 (static prototype)
+✅ Milestone 1 (static prototype) is done and live on GitHub Pages. Next up: Milestone 2, real accounts and a database with Supabase.
