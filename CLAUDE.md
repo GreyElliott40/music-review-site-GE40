@@ -28,7 +28,7 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - [x] Album detail page (cover, artist, year, tracklist)
 - [x] Rating and review box, working like Letterboxd's: a 5-star rating that allows half stars (0.5–5), a separate heart to mark that you liked the album, and a short review (saved in the browser for now with localStorage)
 - [x] "My reviews" page that lists saved ratings
-- [ ] Deploy to GitHub Pages
+- [x] Deploy to GitHub Pages
 
 ### Milestone 2: Real accounts and a database
 - [ ] Set up a Supabase project
@@ -43,6 +43,9 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - Average ratings per album
 
 ## Status
+- Live site: https://greyelliott40.github.io/music-review-site-GE40/ (GitHub Pages, `main` branch, root folder). As of 2026-11-15 GitHub still reported Pages as not enabled for the repo ("There isn't a GitHub Pages site here"); if the URL 404s, turn it on in Settings → Pages → Source: "Deploy from a branch" → `main` / `(root)` → Save, then wait a minute or two.
+- The site lives in a subfolder (`/music-review-site-GE40/`) and GitHub Pages file names are case-sensitive. Every link, script, stylesheet and image path must be RELATIVE ("album.html", never "/album.html") and match the file's exact upper/lower case. Any new page must follow this. Only `404.html` is special: GitHub shows it for any missing address (even deep ones like `.../a/b/c`), so it sets a `<base href>` to the site's root folder before its other links.
+- Deploy files: `.nojekyll` (serve every file as-is), `404.html` (styled, shared header/footer, links back to search), `favicon.svg` (a record in the accent color, linked on every page), and on every page a `<meta name="description">` plus Open Graph tags (`og:title`, `og:description`, `og:type`, `og:site_name`; `og:url` on the home and My reviews pages). Link previews don't run JavaScript, so album links preview with the generic "An album on Spin" text. There's no `og:image` yet (it would need a PNG).
 - Layout done: `index.html` (header, search bar, results grid, footer) and `style.css` (dark theme, responsive grid).
 - Album search done: `script.js` searches MusicBrainz release groups (studio albums only: no singles, live albums or compilations), shows cover / title / artist / year cards, a "No cover" box when art is missing, and Searching / No results / error messages. The search is saved in the address (`index.html?q=...`) so Back brings results back.
 - Search forgives typos: capitals and accents never mattered; words of 4+ letters match up to 2 letters off (`word~`). If the strict search (every word must match) finds nothing, a second "loose" search matches albums with only SOME of the words and says "Here are the closest matches". Query building lives in `buildQuery()` in `script.js`.
@@ -56,7 +59,8 @@ Grey, a beginner who is learning to code through this project. That changes how 
 - Header and footer: `layout.js` (loaded first on every page) fills the empty `<header id="site-header">` and `<footer id="site-footer">` placeholders and marks the current page's nav link with `aria-current="page"`. Nav links live in its `NAV_LINKS` list. A new page needs the two placeholders and `<script src="layout.js">`.
 - My reviews page done: `my-reviews.html` + `my-reviews.js`. Reads only `loadAllReviews()`; makes no MusicBrainz requests and never writes to storage. Stats bar (albums, average rating, liked) and a 10-bar half-star histogram, both for all reviews; unrated entries (heart-only or text-only) count as albums but not toward the average or histogram, show no stars on their card, go last in Highest/Lowest rated, and are hidden by any minimum-rating filter. Cards: cover (or "No cover"), title via `fixCapitalization()`, artist, year (hidden if ""), stars via `createStarDisplay()`, heart if liked, first ~150 characters of the text with Read more / Show less, review date; cover and title link to `album.html?id=...`. Controls: text filter (title/artist, ignores accents and case), sort (recent, highest, lowest, artist A–Z ignoring a leading "The", release year newest first), minimum rating (half steps), Liked only. Sort and filters live in the address (`?sort=&liked=1&min=&q=`; defaults are left out). Empty state, "No reviews match these filters" + Clear filters (keeps the sort), and an error message if storage can't be read. Reloads the list when you come Back from editing a review.
 - Working site name is "Spin" (a placeholder; Grey can rename it).
-- Next step: Milestone 1, item 6 (deploy to GitHub Pages). Reminder: reviews saved while opening the files locally won't show on the deployed site (different address, separate localStorage).
+- Milestone 1 is done.
+- Next step: Milestone 2, item 1 (set up a Supabase project). Reminder: reviews saved while opening the files locally won't show on the deployed site (different address, separate localStorage).
 
 ## Decisions log
 - Plain HTML/CSS/JS first so Grey learns the fundamentals before using a framework.

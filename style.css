@@ -875,7 +875,37 @@ a.button {
 }
 
 
-/* ---------- 11. Small screens ----------
+/* ---------- 11. 404 page (404.html) ---------- */
+
+.not-found {
+  text-align: center;
+  padding: 64px 16px 80px;
+}
+
+/* ".not-found .not-found-code" (two classes) beats ".not-found p" below, so the 404 stays blue. */
+.not-found .not-found-code {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+  margin: 0;
+  color: var(--accent);
+}
+
+.not-found h1 {
+  margin: 8px 0;
+}
+
+.not-found p {
+  color: var(--text-muted);
+  margin: 0 0 24px;
+}
+
+.not-found .button {
+  margin: 4px;
+}
+
+
+/* ---------- 12. Small screens ----------
    A "media query": rules inside only apply when the screen is 480px wide or less. */
 @media (max-width: 480px) {
   .search-section h1 {
