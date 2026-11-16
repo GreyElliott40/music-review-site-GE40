@@ -39,7 +39,10 @@ function fillHeader() {
   // with text from MusicBrainz or from the user (use textContent for those).
   document.getElementById("site-header").innerHTML = `
     <div class="container header-inner">
-      <a href="index.html" class="logo">Spin</a>
+      <a href="index.html" class="logo">
+        <!-- alt="" because the icon is decoration: the name right after it says it all. -->
+        <img class="logo-icon" src="favicon.svg" alt="" width="24" height="24">Flipside
+      </a>
       <nav>${navLinks}</nav>
     </div>`;
 }

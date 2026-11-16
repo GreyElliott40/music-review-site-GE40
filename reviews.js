@@ -50,6 +50,7 @@
    "My reviews" page can list everything without asking MusicBrainz again,
    which would take 1 second per album because of the rate limit. */
 
+// "spin" is the site's old name; the key is kept on purpose so reviews saved before the rename still load.
 const REVIEWS_KEY = "spin-reviews";   // the name everything is saved under
 const REVIEW_MAX_LENGTH = 1000;       // character limit for the written review
 

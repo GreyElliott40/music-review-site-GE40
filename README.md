@@ -1,4 +1,6 @@
-A Letterboxd-style website for music. Search for any album, rate it from one to five stars, write a review, and keep a profile of everything you've listened to.
+# Flipside
+
+Flipside is a Letterboxd-style website for music. Search for any album, rate it from one to five stars, write a review, and keep a profile of everything you've listened to.
 
 **Live site:** [https://greyelliott40.github.io/music-review-site-GE40/](https://greyelliott40.github.io/music-review-site-GE40/)
 

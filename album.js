@@ -493,8 +493,8 @@ async function loadAlbum() {
       inc: "artist-credits releases",
     });
 
-    // The browser tab shows the album name, e.g. "Abbey Road by The Beatles — Spin".
-    document.title = `${fixCapitalization(album.title)} by ${getArtistName(album)} — Spin`;
+    // The browser tab shows the album name, e.g. "Abbey Road by The Beatles — Flipside".
+    document.title = `${fixCapitalization(album.title)} by ${getArtistName(album)} — Flipside`;
 
     let media = [];
     const release = pickOriginalRelease(album.releases || []);
