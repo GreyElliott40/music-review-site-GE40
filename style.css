@@ -96,12 +96,35 @@ a {
   height: 60px;
 }
 
+/* The logo: a small record (favicon.svg) next to the name. inline-flex lines them up. */
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 1.5rem;  /* "rem" = relative to the base font size (usually 16px) */
   font-weight: 800;
   color: var(--text);
   text-decoration: none;  /* remove link underline */
   letter-spacing: -0.5px;
+}
+
+/* The record is sized in "em" so it grows and shrinks with the logo text. */
+.logo-icon {
+  width: 0.95em;
+  height: 0.95em;
+  transition: transform 0.6s ease;
+}
+
+/* Hovering the logo gives the record a half turn. */
+.logo:hover .logo-icon {
+  transform: rotate(180deg);
+}
+
+/* Skip the spin for people who've asked their device for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .logo-icon {
+    transition: none;
+  }
 }
 
 nav a {
